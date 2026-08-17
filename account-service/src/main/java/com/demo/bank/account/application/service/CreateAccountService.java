@@ -1,6 +1,6 @@
 package com.demo.bank.account.application.service;
 
-import com.demo.bank.account.application.port.in.GetAccountUseCase;
+import com.demo.bank.account.application.port.in.CreateAccountUseCase;
 import com.demo.bank.account.application.port.out.AccountRepositoryPortOut;
 import com.demo.bank.account.domain.model.Account;
 import lombok.RequiredArgsConstructor;
@@ -9,11 +9,11 @@ import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
-public class GetAccountService implements GetAccountUseCase {
-    private final AccountRepositoryPortOut repositoryPortOut;
+public class CreateAccountService implements CreateAccountUseCase {
+    private final AccountRepositoryPortOut accountRepositoryPortOut;
 
     @Override
-    public Mono<Account> getAccount(Long id) {
-        return repositoryPortOut.findById(id);
+    public Mono<Account> createAccount(Account account) {
+        return accountRepositoryPortOut.save(account);
     }
 }

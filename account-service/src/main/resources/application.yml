@@ -1,0 +1,10 @@
+server:
+  port: 8100
+spring:
+  application:
+    name: account-service
+  r2dbc:
+    url: r2dbc:mysql://localhost:3306/bank
+    username: root
+    password: "0000"
+
