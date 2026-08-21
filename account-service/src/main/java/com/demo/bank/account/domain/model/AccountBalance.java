@@ -1,6 +1,7 @@
 package com.demo.bank.account.domain.model;
 
 import com.demo.bank.account.domain.enums.AppCurrency;
+import com.demo.bank.account.domain.exception.InsufficientFundsException;
 
 import java.math.BigDecimal;
 import java.util.Objects;
@@ -25,19 +26,14 @@ public record AccountBalance(BigDecimal balance, AppCurrency currency){
         );
     }
 
-    public AccountBalance debit(BigDecimal amount){
+    public void debit(BigDecimal amount){
         validateAmount(amount);
 
         BigDecimal newBalance = balance.subtract(amount);
 
         if(newBalance.compareTo(BigDecimal.ZERO)<0){
-            throw new IllegalArgumentException("AccountBalance Insuficiente");
+            throw new InsufficientFundsException("11111111111-11111",amount);
         }
-
-        return new AccountBalance(
-                newBalance,
-                currency
-        );
 
     }
 

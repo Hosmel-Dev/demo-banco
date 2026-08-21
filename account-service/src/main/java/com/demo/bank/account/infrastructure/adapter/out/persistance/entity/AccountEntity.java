@@ -9,6 +9,7 @@ import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Table("account")
 @Getter
@@ -36,4 +37,7 @@ public class AccountEntity {
 
     @Column("status")
     private AccountStatus status;
+
+    @Column("created_at")
+    private LocalDateTime createdAt;
 }

@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
+import java.math.BigDecimal;
+
 @Component
 @RequiredArgsConstructor
 public class AccountPersistenceAdapter implements AccountRepositoryPortOut {
@@ -25,5 +27,21 @@ public class AccountPersistenceAdapter implements AccountRepositoryPortOut {
     public Mono<Account> save(Account account) {
         Mono<AccountEntity> entity = reactiveAccountRepository.save(mapper.toEntity(account));
         return entity.map(mapper::entityToDomain);
+    }
+
+    @Override
+    public Mono<Account> findByAccountNumber(String number) {
+        Mono<AccountEntity> entity = reactiveAccountRepository.findByAccountNumber(number);
+        return entity.map(mapper::entityToDomain);
+    }
+
+    @Override
+    public Mono<Account> debit(Long id, BigDecimal amount) {
+        return reactiveAccountRepository.debit(id, amount).map(mapper::entityToDomain);
+    }
+
+    @Override
+    public Mono<Account> credit(Long id, BigDecimal amount) {
+        return reactiveAccountRepository.credit(id, amount).map(mapper::entityToDomain);
     }
 }

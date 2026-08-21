@@ -6,6 +6,7 @@ import com.demo.bank.account.domain.enums.AppCurrency;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Data
 public class Account {
@@ -14,5 +15,6 @@ public class Account {
     private AccountType type;
     private AccountBalance balance;
     private AccountStatus status;
+    private LocalDateTime createdAt;
 
 }
