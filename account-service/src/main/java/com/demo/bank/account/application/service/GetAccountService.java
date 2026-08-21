@@ -2,6 +2,7 @@ package com.demo.bank.account.application.service;
 
 import com.demo.bank.account.application.port.in.GetAccountUseCase;
 import com.demo.bank.account.application.port.out.AccountRepositoryPortOut;
+import com.demo.bank.account.domain.exception.AccountNotFoundException;
 import com.demo.bank.account.domain.model.Account;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,6 +15,7 @@ public class GetAccountService implements GetAccountUseCase {
 
     @Override
     public Mono<Account> getAccount(Long id) {
-        return repositoryPortOut.findById(id);
+        return repositoryPortOut.findById(id)
+                .switchIfEmpty(Mono.error(new AccountNotFoundException(id)));
     }
 }

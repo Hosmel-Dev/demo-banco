@@ -5,6 +5,9 @@ import com.demo.bank.account.application.dto.result.TransactionAccountResult;
 import com.demo.bank.account.application.port.in.CreditAccountUseCase;
 import com.demo.bank.account.application.port.out.AccountRepositoryPortOut;
 import com.demo.bank.account.domain.enums.AccountStatus;
+import com.demo.bank.account.domain.exception.AccountNotActiveException;
+import com.demo.bank.account.domain.exception.AccountNotFoundException;
+import com.demo.bank.account.domain.exception.DifferentCurrencyException;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -19,11 +22,17 @@ public class CreditAccountService implements CreditAccountUseCase {
     public Mono<TransactionAccountResult> execute(TransactionAccountCommand transactionAccountCommand) {
         return repositoryPortOut.findById(transactionAccountCommand.id()).flatMap(account -> {
             if(!account.getStatus().equals(AccountStatus.ACTIVE)){
-                return null;
+                return Mono.error(new AccountNotActiveException(
+                        account.getAccountNumber(),
+                        account.getStatus()
+                ));
             }
             if(!account.getBalance().currency().equals(transactionAccountCommand.currency())){
-                return null;
-                //Posiblemente usamos los datos de Balance
+                return Mono.error(new DifferentCurrencyException(
+                        account.getAccountNumber(),
+                        transactionAccountCommand.currency(),
+                        account.getBalance().currency()
+                ));
             }
             account.getBalance().credit(transactionAccountCommand.amount());
 
@@ -32,6 +41,6 @@ public class CreditAccountService implements CreditAccountUseCase {
                     accountCredited.getAccountNumber(),
                     accountCredited.getBalance(),
                     accountCredited.getCreatedAt()));
-        });
+        }).switchIfEmpty(Mono.error(new AccountNotFoundException(transactionAccountCommand.id())));
     }
 }

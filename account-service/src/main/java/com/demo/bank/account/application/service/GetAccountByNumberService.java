@@ -2,6 +2,7 @@ package com.demo.bank.account.application.service;
 
 import com.demo.bank.account.application.port.in.GetAccountByNumberUseCase;
 import com.demo.bank.account.application.port.out.AccountRepositoryPortOut;
+import com.demo.bank.account.domain.exception.AccountNotFoundException;
 import com.demo.bank.account.domain.model.Account;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,7 @@ public class GetAccountByNumberService implements GetAccountByNumberUseCase {
 
     @Override
     public Mono<Account> execute(String accountNumber) {
-        return accountRepositoryPortOut.findByAccountNumber(accountNumber);
+        return accountRepositoryPortOut.findByAccountNumber(accountNumber)
+                .switchIfEmpty(Mono.error(new AccountNotFoundException(accountNumber)));
     }
 }
