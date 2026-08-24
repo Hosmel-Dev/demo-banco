@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 
 public record CreateTransferRequest(
         Long originAccountId,
-        Long destinationAccountId,
+        String destinationAccountNumber,
         BigDecimal amount,
         AppCurrency currency,
         String description

@@ -4,6 +4,7 @@ import com.demo.bank.transaction.application.dto.command.AccountTransferCommand;
 import com.demo.bank.transaction.application.dto.result.AccountTransferResult;
 import com.demo.bank.transaction.application.port.out.AccountPort;
 import com.demo.bank.transaction.domain.model.Account;
+import com.demo.bank.transaction.domain.model.Money;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -15,43 +16,60 @@ public class AccountClientAdapter implements AccountPort {
     private final WebClient accountWebClient;
 
     @Override
-    public Mono<AccountTransferResult> debit(AccountTransferCommand account) {
+    public Mono<AccountTransferResult> debit(Long id, Money money) {
         AccountRequest request = AccountRequest.builder()
-                .id(account.id())
-                .amount(account.money().amount())
-                .currency(account.money().currency())
+                .id(id)
+                .amount(money.amount())
+                .currency(money.currency())
                 .build();
         return accountWebClient
-                .patch()
-                .uri("accounts/debit")
+                .post()
+                .uri("/accounts/debit")
                 .bodyValue(request)
                 .retrieve()
                 .bodyToMono(AccountResponse.class)
                 .map(accountResponse ->
                         new AccountTransferResult(
-                                accountResponse.getId(),
-                                accountResponse.getBalance()
+                                accountResponse.id(),
+                                accountResponse.balance().amount(),
+                                accountResponse.balance().currency()
                         ));
     }
 
     @Override
-    public Mono<AccountTransferResult> credit(AccountTransferCommand account) {
+    public Mono<AccountTransferResult> credit(Long id, Money money) {
         AccountRequest request = AccountRequest.builder()
-                .id(account.id())
-                .amount(account.money().amount())
-                .currency(account.money().currency())
+                .id(id)
+                .amount(money.amount())
+                .currency(money.currency())
                 .build();
         return accountWebClient
-                .patch()
-                .uri("accounts/credit")
+                .post()
+                .uri("/accounts/credit")
                 .bodyValue(request)
                 .retrieve()
                 .bodyToMono(AccountResponse.class)
                 .map(accountResponse ->
                         new AccountTransferResult(
-                                accountResponse.getId(),
-                                accountResponse.getBalance()
+                                accountResponse.id(),
+                                accountResponse.balance().amount(),
+                                accountResponse.balance().currency()
                         ));
+    }
+
+    @Override
+    public Mono<Long> validate(String accountNumber) {
+        return accountWebClient
+                .get()
+                .uri("/accounts/number/{account-number}",accountNumber)
+                .retrieve()
+                .bodyToMono(ValidationAccountResponse.class)
+                .map(accountResponse -> {
+                    if (accountResponse == null || !accountResponse.status().equals("ACTIVE")){
+                        return null;
+                    }
+                    return accountResponse.id();
+                });
     }
 
 

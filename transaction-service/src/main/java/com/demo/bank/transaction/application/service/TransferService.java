@@ -3,6 +3,7 @@ package com.demo.bank.transaction.application.service;
 import com.demo.bank.transaction.application.dto.command.CreateTransferCommand;
 import com.demo.bank.transaction.application.dto.result.CreateTransferResult;
 import com.demo.bank.transaction.application.port.in.TransferUseCase;
+import com.demo.bank.transaction.application.port.out.AccountPort;
 import com.demo.bank.transaction.application.port.out.LedgerEntriesRepositoryPortOut;
 import com.demo.bank.transaction.application.port.out.TransactionRepositoryPortOut;
 import com.demo.bank.transaction.domain.enums.AppCurrency;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Service
@@ -25,37 +27,67 @@ import java.time.LocalDateTime;
 public class TransferService implements TransferUseCase {
     private final TransactionRepositoryPortOut transactionRepositoryPortOut;
     private final LedgerEntriesRepositoryPortOut ledgerEntriesRepositoryPortOut;
+    private final AccountPort accountPort;
 
+    //FALTARÍA GESTIONAR CORRECTAMENTE EL TRANSACTIONAL PARA LA TRAZABILIDAD DE INTENTOS
     @Transactional
     @Override
-    public Mono<CreateTransferResult> execute(CreateTransferCommand createTransactionCommand) {
+    public Mono<CreateTransferResult> execute(CreateTransferCommand command) {
 
-        Money money = new Money(createTransactionCommand.transaction().amount(), createTransactionCommand.transaction().currency());
+        Money money = new Money(
+                command.transaction().amount(),
+                command.transaction().currency()
+        );
+
         FinancialTransaction financialTransaction = FinancialTransaction.builder()
-                .idempotencyKey(createTransactionCommand.idempotencyKey())
+                .idempotencyKey(command.idempotencyKey())
                 .type(TransactionType.TRANSFER)
                 .money(money)
                 .status(TransactionStatus.PENDING)
-                .description(createTransactionCommand.transaction().description())
+                .description(command.transaction().description())
                 .build();
-        return transactionRepositoryPortOut.save(financialTransaction).flatMap(transactionStored -> {
 
-            //VALIDAR CUENTA DE ORIGEN A TRAVÉS DE UNA API
-            //REALIZAR PETICIONES DE DEBITO Y CRÉDITO
-            LedgerEntry originAccount = LedgerEntry.builder()
-                    .accountId(createTransactionCommand.ledgerEntries().originAccountId())
-                    .transactionId(transactionStored.getId())
-                    .direction(Direction.DEBIT)
-                    .money(money)
-                    .build();
-            LedgerEntry destinationAccount = LedgerEntry.builder()
-                    .accountId(createTransactionCommand.ledgerEntries().destinationAccountId())
-                    .transactionId(transactionStored.getId())
-                    .direction(Direction.CREDIT)
-                    .money(money)
-                    .build();
+        return transactionRepositoryPortOut.save(financialTransaction)
+                .flatMap(transactionStored ->
+                        accountPort.validate(command.ledgerEntries().destinationAccountNumber())
+                                .flatMap(idDestination -> {
+                                    LedgerEntry originEntry = LedgerEntry.builder()
+                                            .accountId(command.ledgerEntries().originAccountId())
+                                            .transactionId(transactionStored.getId())
+                                            .direction(Direction.DEBIT)
+                                            .money(money)
+                                            .build();
+                                    LedgerEntry destinationEntry = LedgerEntry.builder()
+                                            .accountId(idDestination)
+                                            .transactionId(transactionStored.getId())
+                                            .direction(Direction.CREDIT)
+                                            .money(money)
+                                            .build();
 
-            return null;
-        });
+                                    return accountPort
+                                            .debit(command.ledgerEntries().originAccountId(),money)
+                                            .then(accountPort.credit(idDestination,money))
+                                            .then(ledgerEntriesRepositoryPortOut.save(originEntry))
+                                            .then(ledgerEntriesRepositoryPortOut.save(destinationEntry))
+                                            .then(Mono.defer(() -> {
+                                                transactionStored.setStatus(TransactionStatus.SUCCESS);
+                                                transactionStored.setCreatedAt(LocalDateTime.now());
+                                                return transactionRepositoryPortOut.save(transactionStored);
+                                            }))
+                                            .map(savedTransaction ->
+                                                    new CreateTransferResult(
+                                                            savedTransaction.getId(),
+                                                            savedTransaction.getIdempotencyKey(),
+                                                            savedTransaction.getType(),
+                                                            savedTransaction.getMoney().amount(),
+                                                            savedTransaction.getMoney().currency(),
+                                                            savedTransaction.getStatus(),
+                                                            originEntry.getAccountId(),
+                                                            destinationEntry.getAccountId(),
+                                                            savedTransaction.getCreatedAt()
+                                                    )
+                                            );
+                                })
+                );
     }
 }

@@ -1,6 +1,7 @@
 package com.demo.bank.transaction.application.dto.result;
 
 import com.demo.bank.transaction.domain.enums.AppCurrency;
+import com.demo.bank.transaction.domain.enums.TransactionStatus;
 import com.demo.bank.transaction.domain.enums.TransactionType;
 
 import java.math.BigDecimal;
@@ -12,7 +13,7 @@ public record CreateTransferResult(
         TransactionType type,
         BigDecimal amount,
         AppCurrency currency,
-        String status,
+        TransactionStatus status,
         Long fromAccountId,
         Long toAccountId,
         LocalDateTime createdAt

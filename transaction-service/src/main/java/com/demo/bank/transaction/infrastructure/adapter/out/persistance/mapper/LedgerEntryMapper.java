@@ -8,11 +8,11 @@ import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
 public interface LedgerEntryMapper {
-    @Mapping(source = "money.amount", target = "amount")
-    @Mapping(source = "money.currency", target = "currency")
+    @Mapping(source = ".", target = "money")
     LedgerEntry toDomain(LedgerEntryEntity ledgerEntryEntity);
 
-    @Mapping(source = ".", target = "money")
+    @Mapping(source = "money.amount", target = "amount")
+    @Mapping(source = "money.currency", target = "currency")
     LedgerEntryEntity toEntity(LedgerEntry ledgerEntry);
 
     default Money fromEntityToDomain(LedgerEntryEntity entity){

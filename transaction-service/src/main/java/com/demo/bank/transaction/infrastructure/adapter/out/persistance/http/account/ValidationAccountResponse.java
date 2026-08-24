@@ -6,15 +6,12 @@ import com.demo.bank.transaction.domain.model.Money;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-public record AccountResponse(
-    Long id,
-    String accountNumber,
-    BalanceResponse balance,
-    LocalDateTime createdAt,
-    String status
-){
-    public record BalanceResponse(
-            BigDecimal amount,
-            AppCurrency currency
-    ){}
-}
+public record ValidationAccountResponse (
+        Long id,
+        String accountNumber,
+        BigDecimal amount,
+        AppCurrency currency,
+        LocalDateTime createdAt,
+        String status
+)
+{}
