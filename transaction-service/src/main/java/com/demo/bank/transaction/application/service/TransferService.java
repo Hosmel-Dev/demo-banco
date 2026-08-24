@@ -4,26 +4,34 @@ import com.demo.bank.transaction.application.dto.command.CreateTransferCommand;
 import com.demo.bank.transaction.application.dto.result.CreateTransferResult;
 import com.demo.bank.transaction.application.port.in.TransferUseCase;
 import com.demo.bank.transaction.application.port.out.TransactionRepositoryPortOut;
+import com.demo.bank.transaction.domain.enums.AppCurrency;
 import com.demo.bank.transaction.domain.enums.Direction;
 import com.demo.bank.transaction.domain.enums.TransactionStatus;
+import com.demo.bank.transaction.domain.enums.TransactionType;
 import com.demo.bank.transaction.domain.model.FinancialTransaction;
 import com.demo.bank.transaction.domain.model.LedgerEntry;
 import com.demo.bank.transaction.domain.model.Money;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
 public class TransferService implements TransferUseCase {
     private final TransactionRepositoryPortOut transactionRepositoryPortOut;
 
+    @Transactional
     @Override
-    public Mono<CreateTransferResult> excecute(CreateTransferCommand createTransactionCommand) {
+    public Mono<CreateTransferResult> execute(CreateTransferCommand createTransactionCommand) {
 
         Money money = new Money(createTransactionCommand.transaction().amount(), createTransactionCommand.transaction().currency());
         FinancialTransaction financialTransaction = FinancialTransaction.builder()
-                .idempotency_key(createTransactionCommand.idempotencyKey())
+                .idempotencyKey(createTransactionCommand.idempotencyKey())
+                .type(TransactionType.TRANSFER)
                 .money(money)
                 .status(TransactionStatus.PENDING)
                 .description(createTransactionCommand.transaction().description())

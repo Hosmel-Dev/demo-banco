@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Builder
 public class FinancialTransaction {
     private Long id;
-    private String idempotency_key;
+    private String idempotencyKey;
     private TransactionType type;
     private Money money;
     private TransactionStatus status;

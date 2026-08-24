@@ -1,0 +1,9 @@
+server:
+  port: 8101
+spring:
+  application:
+    name: transaction-service
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/bank
+    username: postgres
+    password: "0000"

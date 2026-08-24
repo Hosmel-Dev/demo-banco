@@ -9,13 +9,22 @@ import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
 public interface TransferRestMapper {
+//    @Mapping(source = "idempotencyKey", target = "idempotencyKey")
+//    @Mapping(source = "createTransferRequest.originAccountId", target = "ledgerEntries.originAccountId")
+//    @Mapping(source = "createTransferRequest.destinationAccountId", target = "ledgerEntries.destinationAccountId")
+//    @Mapping(source = "createTransferRequest.amount", target = "transaction.amount")
+//    @Mapping(source = "createTransferRequest.currency", target = "transaction.currency")
+//    @Mapping(source = "createTransferRequest.description", target = "transaction.description")
+//    CreateTransferCommand fromRequestToCommand(String idempotencyKey, CreateTransferRequest createTransferRequest);
+
     @Mapping(source = "idempotencyKey", target = "idempotencyKey")
-    @Mapping(source = "request.originAccountId", target = "ledgerEntries.originAccountId")
-    @Mapping(source = "request.destinationAccountId", target = "ledgerEntries.destinationAccountId")
-    @Mapping(source = "request.amount", target = "transaction.amount")
-    @Mapping(source = "request.currency", target = "transaction.currency")
-    @Mapping(source = "request.description", target = "transaction.description")
-    CreateTransferCommand fromRequestToCommand(String idempotencyKey, CreateTransferRequest createTransferRequest);
+    @Mapping(source = "request", target = "transaction")
+    @Mapping(source = "request", target = "ledgerEntries")
+    CreateTransferCommand fromRequestToCommand(String idempotencyKey, CreateTransferRequest request);
+
+    CreateTransferCommand.FinancialTransaction toFinancialTransaction(CreateTransferRequest request);
+    CreateTransferCommand.LedgerEntries toLedgerEntries(CreateTransferRequest request);
+
 
     CreateTransferResponse fromResultToResponse(CreateTransferResult createTransferResult);
 }

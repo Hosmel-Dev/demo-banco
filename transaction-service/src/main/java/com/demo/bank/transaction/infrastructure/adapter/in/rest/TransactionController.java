@@ -21,6 +21,6 @@ public class TransactionController {
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @RequestBody CreateTransferRequest createTransferRequest){
         CreateTransferCommand command = restMapper.fromRequestToCommand(idempotencyKey, createTransferRequest);
-        return transferUseCase.excecute(command).map(restMapper::fromResultToResponse);
+        return transferUseCase.execute(command).map(restMapper::fromResultToResponse);
     }
 }
