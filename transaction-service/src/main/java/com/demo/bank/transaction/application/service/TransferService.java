@@ -3,6 +3,7 @@ package com.demo.bank.transaction.application.service;
 import com.demo.bank.transaction.application.dto.command.CreateTransferCommand;
 import com.demo.bank.transaction.application.dto.result.CreateTransferResult;
 import com.demo.bank.transaction.application.port.in.TransferUseCase;
+import com.demo.bank.transaction.application.port.out.LedgerEntriesRepositoryPortOut;
 import com.demo.bank.transaction.application.port.out.TransactionRepositoryPortOut;
 import com.demo.bank.transaction.domain.enums.AppCurrency;
 import com.demo.bank.transaction.domain.enums.Direction;
@@ -23,6 +24,7 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class TransferService implements TransferUseCase {
     private final TransactionRepositoryPortOut transactionRepositoryPortOut;
+    private final LedgerEntriesRepositoryPortOut ledgerEntriesRepositoryPortOut;
 
     @Transactional
     @Override
@@ -36,19 +38,21 @@ public class TransferService implements TransferUseCase {
                 .status(TransactionStatus.PENDING)
                 .description(createTransactionCommand.transaction().description())
                 .build();
-
         return transactionRepositoryPortOut.save(financialTransaction).flatMap(transactionStored -> {
+
+            //VALIDAR CUENTA DE ORIGEN A TRAVÉS DE UNA API
+            //REALIZAR PETICIONES DE DEBITO Y CRÉDITO
             LedgerEntry originAccount = LedgerEntry.builder()
                     .accountId(createTransactionCommand.ledgerEntries().originAccountId())
                     .transactionId(transactionStored.getId())
                     .direction(Direction.DEBIT)
-                    .amount(money)
+                    .money(money)
                     .build();
             LedgerEntry destinationAccount = LedgerEntry.builder()
                     .accountId(createTransactionCommand.ledgerEntries().destinationAccountId())
                     .transactionId(transactionStored.getId())
                     .direction(Direction.CREDIT)
-                    .amount(money)
+                    .money(money)
                     .build();
 
             return null;
