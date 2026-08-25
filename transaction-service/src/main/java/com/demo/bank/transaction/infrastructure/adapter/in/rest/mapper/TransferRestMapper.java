@@ -1,7 +1,9 @@
 package com.demo.bank.transaction.infrastructure.adapter.in.rest.mapper;
 
+import com.demo.bank.transaction.application.dto.command.CreateTransactionCommand;
 import com.demo.bank.transaction.application.dto.command.CreateTransferCommand;
 import com.demo.bank.transaction.application.dto.result.CreateTransferResult;
+import com.demo.bank.transaction.infrastructure.adapter.in.rest.request.CreateTransactionRequest;
 import com.demo.bank.transaction.infrastructure.adapter.in.rest.request.CreateTransferRequest;
 import com.demo.bank.transaction.infrastructure.adapter.in.rest.response.CreateTransferResponse;
 import org.mapstruct.Mapper;
@@ -21,10 +23,10 @@ public interface TransferRestMapper {
     @Mapping(source = "request", target = "transaction")
     @Mapping(source = "request", target = "ledgerEntries")
     CreateTransferCommand fromRequestToCommand(String idempotencyKey, CreateTransferRequest request);
-
     CreateTransferCommand.FinancialTransaction toFinancialTransaction(CreateTransferRequest request);
     CreateTransferCommand.LedgerEntries toLedgerEntries(CreateTransferRequest request);
 
-
     CreateTransferResponse fromResultToResponse(CreateTransferResult createTransferResult);
+
+
 }

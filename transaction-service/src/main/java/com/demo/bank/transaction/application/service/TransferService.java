@@ -6,7 +6,6 @@ import com.demo.bank.transaction.application.port.in.TransferUseCase;
 import com.demo.bank.transaction.application.port.out.AccountPort;
 import com.demo.bank.transaction.application.port.out.LedgerEntriesRepositoryPortOut;
 import com.demo.bank.transaction.application.port.out.TransactionRepositoryPortOut;
-import com.demo.bank.transaction.domain.enums.AppCurrency;
 import com.demo.bank.transaction.domain.enums.Direction;
 import com.demo.bank.transaction.domain.enums.TransactionStatus;
 import com.demo.bank.transaction.domain.enums.TransactionType;
@@ -18,8 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 
-import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Service
@@ -33,7 +30,6 @@ public class TransferService implements TransferUseCase {
     @Transactional
     @Override
     public Mono<CreateTransferResult> execute(CreateTransferCommand command) {
-
         Money money = new Money(
                 command.transaction().amount(),
                 command.transaction().currency()
