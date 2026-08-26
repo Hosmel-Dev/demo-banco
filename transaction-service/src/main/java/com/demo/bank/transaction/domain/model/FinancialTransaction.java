@@ -17,4 +17,13 @@ public class FinancialTransaction {
     private TransactionStatus status;
     private String description;
     private LocalDateTime createdAt;
+
+    public void markAsSuccessful(){
+        if (status != TransactionStatus.PENDING){
+            System.out.println();
+        }
+        this.status = TransactionStatus.SUCCESS;
+        this.createdAt = LocalDateTime.now();
+    }
+
 }

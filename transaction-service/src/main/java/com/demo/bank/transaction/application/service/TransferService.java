@@ -27,6 +27,7 @@ public class TransferService implements TransferUseCase {
     private final AccountPort accountPort;
 
     //FALTARÍA GESTIONAR CORRECTAMENTE EL TRANSACTIONAL PARA LA TRAZABILIDAD DE INTENTOS
+    //TRANSACCIÓN A UNO MISMO XD
     @Transactional
     @Override
     public Mono<CreateTransferResult> execute(CreateTransferCommand command) {
