@@ -1,5 +1,6 @@
 package com.demo.bank.transaction.application.service;
 
+import com.demo.bank.transaction.application.dto.command.CreateTransactionCommand;
 import com.demo.bank.transaction.application.dto.command.CreateTransferCommand;
 import com.demo.bank.transaction.application.dto.result.CreateTransferResult;
 import com.demo.bank.transaction.application.port.in.TransferUseCase;
@@ -28,63 +29,98 @@ public class TransferService implements TransferUseCase {
 
     //FALTARÍA GESTIONAR CORRECTAMENTE EL TRANSACTIONAL PARA LA TRAZABILIDAD DE INTENTOS
     //TRANSACCIÓN A UNO MISMO XD
-    @Transactional
     @Override
     public Mono<CreateTransferResult> execute(CreateTransferCommand command) {
-        Money money = new Money(
+        var money = createMoney(command);
+        var originAccountId = command.ledgerEntries().originAccountId();
+        var transaction = createFinancialTransaction(command, money);
+
+        return transactionRepositoryPortOut.save(transaction)
+                .flatMap(saved ->
+                        accountPort.validate(command.ledgerEntries().destinationAccountNumber())
+                                .flatMap(destinationAccountId ->
+                                    toTransfer(saved,money,originAccountId,destinationAccountId)
+                                            .then(markAsSuccessful(saved))
+                                            .map(successful->
+                                                    returnTransferResult(
+                                                            successful,
+                                                            originAccountId,
+                                                            destinationAccountId))
+                                )
+                );
+    }
+
+    private CreateTransferResult returnTransferResult(FinancialTransaction transaction, Long originAccountId, Long destinationAccountId){
+        return new CreateTransferResult(
+                transaction.getId(),
+                transaction.getIdempotencyKey(),
+                transaction.getType(),
+                transaction.getMoney().amount(),
+                transaction.getMoney().currency(),
+                transaction.getStatus(),
+                originAccountId,
+                destinationAccountId,
+                transaction.getCreatedAt()
+        );
+    }
+
+    private Mono<FinancialTransaction> markAsSuccessful(FinancialTransaction transaction){
+        transaction.markAsSuccessful();
+        return Mono.defer(()->{
+                    transaction.markAsSuccessful();
+                    return transactionRepositoryPortOut.save(transaction);
+                });
+    }
+
+    private Mono<Void> toTransfer(FinancialTransaction transaction, Money money, Long originAccountId, Long destinationAccountId){
+        var originEntry = createLedgerEntry(
+                transaction,
+                money,
+                Direction.DEBIT,
+                originAccountId
+        );
+        var destinationEntry = createLedgerEntry(
+                transaction,
+                money,
+                Direction.CREDIT,
+                destinationAccountId
+        );
+
+        return accountPort.debit(originAccountId,money)
+                .then(accountPort.credit(destinationAccountId,money))
+                .then(ledgerEntriesRepositoryPortOut.save(originEntry))
+                .then(ledgerEntriesRepositoryPortOut.save(destinationEntry))
+                .then();
+    }
+
+    private Money createMoney(CreateTransferCommand command){
+        return new Money(
                 command.transaction().amount(),
                 command.transaction().currency()
         );
+    }
 
-        FinancialTransaction financialTransaction = FinancialTransaction.builder()
+    private FinancialTransaction createFinancialTransaction(CreateTransferCommand command, Money money){
+        return FinancialTransaction.builder()
                 .idempotencyKey(command.idempotencyKey())
                 .type(TransactionType.TRANSFER)
                 .money(money)
                 .status(TransactionStatus.PENDING)
                 .description(command.transaction().description())
                 .build();
+    }
 
-        return transactionRepositoryPortOut.save(financialTransaction)
-                .flatMap(transactionStored ->
-                        accountPort.validate(command.ledgerEntries().destinationAccountNumber())
-                                .flatMap(idDestination -> {
-                                    LedgerEntry originEntry = LedgerEntry.builder()
-                                            .accountId(command.ledgerEntries().originAccountId())
-                                            .transactionId(transactionStored.getId())
-                                            .direction(Direction.DEBIT)
-                                            .money(money)
-                                            .build();
-                                    LedgerEntry destinationEntry = LedgerEntry.builder()
-                                            .accountId(idDestination)
-                                            .transactionId(transactionStored.getId())
-                                            .direction(Direction.CREDIT)
-                                            .money(money)
-                                            .build();
+    private LedgerEntry createLedgerEntry(
+            FinancialTransaction transaction,
+            Money money,
+            Direction direction,
+            Long accountId){
 
-                                    return accountPort
-                                            .debit(command.ledgerEntries().originAccountId(),money)
-                                            .then(accountPort.credit(idDestination,money))
-                                            .then(ledgerEntriesRepositoryPortOut.save(originEntry))
-                                            .then(ledgerEntriesRepositoryPortOut.save(destinationEntry))
-                                            .then(Mono.defer(() -> {
-                                                transactionStored.setStatus(TransactionStatus.SUCCESS);
-                                                transactionStored.setCreatedAt(LocalDateTime.now());
-                                                return transactionRepositoryPortOut.save(transactionStored);
-                                            }))
-                                            .map(savedTransaction ->
-                                                    new CreateTransferResult(
-                                                            savedTransaction.getId(),
-                                                            savedTransaction.getIdempotencyKey(),
-                                                            savedTransaction.getType(),
-                                                            savedTransaction.getMoney().amount(),
-                                                            savedTransaction.getMoney().currency(),
-                                                            savedTransaction.getStatus(),
-                                                            originEntry.getAccountId(),
-                                                            destinationEntry.getAccountId(),
-                                                            savedTransaction.getCreatedAt()
-                                                    )
-                                            );
-                                })
-                );
+        return LedgerEntry.builder()
+                .accountId(accountId)
+                .transactionId(transaction.getId())
+                .direction(direction)
+                .money(money)
+                .build();
     }
 }

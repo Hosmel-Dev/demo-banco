@@ -33,8 +33,9 @@ public class CreditService implements CreditUseCase {
         return transactionRepositoryPortOut.save(transaction)
                 .flatMap(saved ->
                     toCredit(saved,accountId,money)
-                            .then(markAsSuccessful(saved))
-                ).map(savedTransaction -> toResult(savedTransaction,accountId));
+                            .then(markAsSuccessful(saved)))
+                .map(successful ->
+                        toResult(successful,accountId));
 
     }
 
@@ -52,7 +53,9 @@ public class CreditService implements CreditUseCase {
     }
 
     private Money createMoney(CreateTransactionCommand command){
-        return new Money(command.transaction().amount(), command.transaction().currency());
+        return new Money(
+                command.transaction().amount(),
+                command.transaction().currency());
     }
 
     private FinancialTransaction createFinancialTransaction(CreateTransactionCommand command, Money money){

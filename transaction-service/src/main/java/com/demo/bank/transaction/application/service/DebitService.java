@@ -17,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
-import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -28,45 +27,68 @@ public class DebitService implements DebitUseCase {
 
     @Override
     public Mono<CreateTransactionResult> execute(CreateTransactionCommand command) {
-        Money money = new Money(
+        var money = createMoney(command);
+        var accountId = command.ledgerEntries().accountId();
+        var transaction = createFinancialTransaction(command, money);
+
+        return transactionRepositoryPortOut.save(transaction)
+                .flatMap(saved ->
+                    toDebit(saved, money, accountId)
+                            .then(markAsSuccessful(saved,accountId)))
+                .map(successful ->
+                        toResult(successful, accountId));
+
+    }
+
+    private Mono<Void> toDebit(FinancialTransaction financialTransaction, Money money, Long accountId){
+        var ledgerEntry = createLedgerEntry(financialTransaction,money,accountId);
+        return accountPort.debit(accountId,money)
+                .then(ledgerEntriesRepositoryPortOut.save(ledgerEntry))
+                .then();
+    }
+
+    private Mono<FinancialTransaction> markAsSuccessful(FinancialTransaction financialTransaction, Long accountId){
+        financialTransaction.markAsSuccessful();
+        return transactionRepositoryPortOut.save(financialTransaction);
+    }
+
+    private Money createMoney(CreateTransactionCommand command){
+        return new Money(
                 command.transaction().amount(),
                 command.transaction().currency()
         );
+    }
 
-        FinancialTransaction financialTransaction = FinancialTransaction.builder()
+    private FinancialTransaction createFinancialTransaction(CreateTransactionCommand command, Money money){
+        return FinancialTransaction.builder()
                 .idempotencyKey(command.idempotencyKey())
                 .type(TransactionType.WITHDRAWAL)
                 .money(money)
                 .status(TransactionStatus.PENDING)
                 .description(command.transaction().description())
                 .build();
-
-        return transactionRepositoryPortOut.save(financialTransaction).flatMap(savedTransaction -> {
-            LedgerEntry accountEntry = LedgerEntry.builder()
-                    .transactionId(savedTransaction.getId())
-                    .accountId(command.ledgerEntries().accountId())
-                    .direction(Direction.DEBIT)
-                    .money(money)
-                    .build();
-
-            return accountPort.debit(command.ledgerEntries().accountId(),
-                    money)
-                    .then(ledgerEntriesRepositoryPortOut.save(accountEntry))
-                    .then(Mono.defer(()->{
-                        savedTransaction.setStatus(TransactionStatus.SUCCESS);
-                        savedTransaction.setCreatedAt(LocalDateTime.now());
-                        return transactionRepositoryPortOut.save(savedTransaction);
-                    }))
-                    .map(successfulTransaction -> new CreateTransactionResult(
-                            successfulTransaction.getId(),
-                            successfulTransaction.getIdempotencyKey(),
-                            successfulTransaction.getType(),
-                            successfulTransaction.getMoney().amount(),
-                            successfulTransaction.getMoney().currency(),
-                            successfulTransaction.getStatus(),
-                            command.ledgerEntries().accountId(),
-                            successfulTransaction.getCreatedAt()
-                    ));
-        });
     }
+
+    private LedgerEntry createLedgerEntry(FinancialTransaction transaction, Money money, Long accountId){
+        return LedgerEntry.builder()
+                .transactionId(transaction.getId())
+                .accountId(accountId)
+                .direction(Direction.DEBIT)
+                .money(money)
+                .build();
+    }
+
+    private CreateTransactionResult toResult(FinancialTransaction transaction, Long accountId){
+        return new CreateTransactionResult(
+                transaction.getId(),
+                transaction.getIdempotencyKey(),
+                transaction.getType(),
+                transaction.getMoney().amount(),
+                transaction.getMoney().currency(),
+                transaction.getStatus(),
+                accountId,
+                transaction.getCreatedAt()
+        );
+    }
+
 }
