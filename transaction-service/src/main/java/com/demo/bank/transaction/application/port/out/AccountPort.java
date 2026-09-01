@@ -9,5 +9,5 @@ import reactor.core.publisher.Mono;
 public interface AccountPort {
     Mono<AccountTransferResult> debit(Long id, Money money);
     Mono<AccountTransferResult> credit(Long id, Money money);
-    Mono<Long> validate(String accountNumber);
+    Mono<Long> findAccountIdByNumber(String accountNumber);
 }

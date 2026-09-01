@@ -5,9 +5,14 @@ import com.demo.bank.transaction.application.dto.result.AccountTransferResult;
 import com.demo.bank.transaction.application.port.out.AccountPort;
 import com.demo.bank.transaction.domain.model.Account;
 import com.demo.bank.transaction.domain.model.Money;
+import com.demo.bank.transaction.infrastructure.exception.AccountServiceException;
+import com.demo.bank.transaction.infrastructure.exception.AccountServiceUnavailableException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientException;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
 @Component
@@ -33,7 +38,11 @@ public class AccountClientAdapter implements AccountPort {
                                 accountResponse.id(),
                                 accountResponse.balance().amount(),
                                 accountResponse.balance().currency()
-                        ));
+                        ))
+                .onErrorResume(
+                        WebClientResponseException.NotFound.class,
+                        ex -> Mono.empty()
+                );
     }
 
     @Override
@@ -54,22 +63,33 @@ public class AccountClientAdapter implements AccountPort {
                                 accountResponse.id(),
                                 accountResponse.balance().amount(),
                                 accountResponse.balance().currency()
-                        ));
+                        ))
+                .onErrorResume(
+                        WebClientResponseException.class,
+                        ex -> Mono.empty()
+                );
     }
 
     @Override
-    public Mono<Long> validate(String accountNumber) {
+    public Mono<Long> findAccountIdByNumber(String accountNumber) {
         return accountWebClient
                 .get()
                 .uri("/accounts/number/{account-number}",accountNumber)
                 .retrieve()
                 .bodyToMono(ValidationAccountResponse.class)
-                .map(accountResponse -> {
-                    if (accountResponse == null || !accountResponse.status().equals("ACTIVE")){
-                        return null;
-                    }
-                    return accountResponse.id();
-                });
+                .map(ValidationAccountResponse::id)
+                .onErrorResume(
+                        WebClientResponseException.class,
+                        ex -> Mono.empty()
+                )
+                .onErrorMap(
+                        WebClientResponseException.class,
+                        ex -> new AccountServiceException()
+                )
+                .onErrorMap(
+                        WebClientRequestException.class,
+                        ex->new AccountServiceUnavailableException()
+                );
     }
 
 

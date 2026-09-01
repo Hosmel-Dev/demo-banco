@@ -10,6 +10,7 @@ import com.demo.bank.transaction.application.port.out.TransactionRepositoryPortO
 import com.demo.bank.transaction.domain.enums.Direction;
 import com.demo.bank.transaction.domain.enums.TransactionStatus;
 import com.demo.bank.transaction.domain.enums.TransactionType;
+import com.demo.bank.transaction.domain.exception.AccountNotFoundException;
 import com.demo.bank.transaction.domain.model.FinancialTransaction;
 import com.demo.bank.transaction.domain.model.LedgerEntry;
 import com.demo.bank.transaction.domain.model.Money;
@@ -33,24 +34,25 @@ public class TransferService implements TransferUseCase {
     public Mono<CreateTransferResult> execute(CreateTransferCommand command) {
         var money = createMoney(command);
         var originAccountId = command.ledgerEntries().originAccountId();
+        var destinationAccountNumber = command.ledgerEntries().destinationAccountNumber();
         var transaction = createFinancialTransaction(command, money);
 
-        return transactionRepositoryPortOut.save(transaction)
-                .flatMap(saved ->
-                        accountPort.validate(command.ledgerEntries().destinationAccountNumber())
-                                .flatMap(destinationAccountId ->
-                                    toTransfer(saved,money,originAccountId,destinationAccountId)
-                                            .then(markAsSuccessful(saved))
-                                            .map(successful->
-                                                    returnTransferResult(
-                                                            successful,
-                                                            originAccountId,
-                                                            destinationAccountId))
-                                )
-                );
+        return accountPort.findAccountIdByNumber(destinationAccountNumber)
+                .switchIfEmpty(Mono.error(new AccountNotFoundException(destinationAccountNumber)))
+                .flatMap(destinationAccountId->
+                        transactionRepositoryPortOut.save(transaction)
+                                .flatMap(saved ->
+                                        toTransfer(saved,money,originAccountId,destinationAccountId)
+                                                .then(markAsSuccessful(saved))
+                                                .map(successful ->
+                                                        returnTransferResult(
+                                                                successful,originAccountId,destinationAccountId))));
     }
 
-    private CreateTransferResult returnTransferResult(FinancialTransaction transaction, Long originAccountId, Long destinationAccountId){
+    private CreateTransferResult returnTransferResult(
+            FinancialTransaction transaction,
+            Long originAccountId,
+            Long destinationAccountId){
         return new CreateTransferResult(
                 transaction.getId(),
                 transaction.getIdempotencyKey(),
@@ -72,7 +74,11 @@ public class TransferService implements TransferUseCase {
                 });
     }
 
-    private Mono<Void> toTransfer(FinancialTransaction transaction, Money money, Long originAccountId, Long destinationAccountId){
+    private Mono<Void> toTransfer(
+            FinancialTransaction transaction,
+            Money money,
+            Long originAccountId,
+            Long destinationAccountId){
         var originEntry = createLedgerEntry(
                 transaction,
                 money,
@@ -100,7 +106,9 @@ public class TransferService implements TransferUseCase {
         );
     }
 
-    private FinancialTransaction createFinancialTransaction(CreateTransferCommand command, Money money){
+    private FinancialTransaction createFinancialTransaction(
+            CreateTransferCommand command,
+            Money money){
         return FinancialTransaction.builder()
                 .idempotencyKey(command.idempotencyKey())
                 .type(TransactionType.TRANSFER)
