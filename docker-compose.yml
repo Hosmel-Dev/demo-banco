@@ -1,0 +1,20 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: database-bank-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: account_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: "0000"
+    ports:
+      - "3307:3306"
+  postgres:
+    image: postgres:17
+    container_name: database-bank-postgres
+    environment:
+      POSTGRES_DB: transaction_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: "10001"
+    ports:
+      - "5433:5432"

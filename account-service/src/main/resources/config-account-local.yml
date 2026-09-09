@@ -6,9 +6,9 @@ spring:
   r2dbc:
     url: r2dbc:mysql://localhost:3307/account_db
     username: user
-    password: "0000"
+    password: "root123"
   flyway:
     url: jdbc:mysql://localhost:3307/account_db
     user: user
-    password: "0000"
+    password: "root123"
     locations: classpath:db/migration

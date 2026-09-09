@@ -4,6 +4,11 @@ spring:
   application:
     name: transaction-service
   r2dbc:
-    url: r2dbc:postgresql://localhost:5432/bank
-    username: postgres
-    password: "0000"
+    url: r2dbc:postgresql://localhost:5433/transaction_db
+    username: user
+    password: "10001"
+  flyway:
+    url: jdbc:postgresql://localhost:5433/transaction_db
+    user: user
+    password: "10001"
+    locations: classpath:db/migration
