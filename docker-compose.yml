@@ -2,6 +2,7 @@ services:
   mysql:
     image: mysql:8.4
     container_name: database-bank-mysql
+    restart: on-failure
     environment:
       MYSQL_ROOT_PASSWORD: root123
       MYSQL_DATABASE: account_db
@@ -9,12 +10,79 @@ services:
       MYSQL_PASSWORD: "0000"
     ports:
       - "3307:3306"
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    volumes:
+      - mysql_data:/var/lib/mysql
+
   postgres:
     image: postgres:17
     container_name: database-bank-postgres
+    restart: on-failure
     environment:
       POSTGRES_DB: transaction_db
       POSTGRES_USER: user
       POSTGRES_PASSWORD: "10001"
     ports:
       - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d transaction_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  account-service:
+    container_name: ms-account
+    build:
+      context: ./account-service
+    image: account-service:0.0.1
+    restart: on-failure
+    ports:
+      - "8100:8100"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      JAVA_OPTS: "-Xms256M -Xmx256M"
+
+      SPRING_R2DBC_URL: r2dbc:mysql://mysql:3306/account_db
+      SPRING_R2DBC_USERNAME: user
+      SPRING_R2DBC_PASSWORD: "0000"
+
+      SPRING_FLYWAY_URL: jdbc:mysql://mysql:3306/account_db
+      SPRING_FLYWAY_USERNAME: user
+      SPRING_FLYWAY_PASSWORD: "0000"
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration
+
+  transaction-service:
+    container_name: ms-transaction
+    build:
+      context: ./transaction-service
+    image: transaction-service:0.0.1
+    restart: on-failure
+    ports:
+      - "8101:8101"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      JAVA_OPTS: "-Xms256M -Xmx256M"
+
+      SPRING_R2DBC_URL: r2dbc:postgresql://postgres:5432/transaction_db
+      SPRING_R2DBC_USERNAME: user
+      SPRING_R2DBC_PASSWORD: "10001"
+
+      SPRING_FLYWAY_URL: jdbc:postgresql://postgres:5432/transaction_db
+      SPRING_FLYWAY_USERNAME: user
+      SPRING_FLYWAY_PASSWORD: "10001"
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration
+
+volumes:
+  mysql_data:
+  postgres_data:

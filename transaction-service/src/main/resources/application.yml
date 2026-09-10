@@ -4,11 +4,11 @@ spring:
   application:
     name: transaction-service
   r2dbc:
-    url: r2dbc:postgresql://localhost:5433/transaction_db
-    username: user
-    password: "10001"
+    url: ${SPRING_R2DBC_URL}
+    username: ${SPRING_R2DBC_USERNAME}
+    password: ${SPRING_R2DBC_PASSWORD}
   flyway:
-    url: jdbc:postgresql://localhost:5433/transaction_db
-    user: user
-    password: "10001"
-    locations: classpath:db/migration
+    url: ${SPRING_FLYWAY_URL}
+    user: ${SPRING_FLYWAY_USERNAME}
+    password: ${SPRING_FLYWAY_PASSWORD}
+    locations: ${SPRING_FLYWAY_LOCATIONS}
