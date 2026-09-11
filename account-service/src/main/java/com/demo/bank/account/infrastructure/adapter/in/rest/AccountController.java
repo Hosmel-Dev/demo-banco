@@ -1,12 +1,12 @@
 package com.demo.bank.account.infrastructure.adapter.in.rest;
 
 import com.demo.bank.account.application.port.in.*;
-import com.demo.bank.account.infrastructure.adapter.in.rest.request.AccountRequest;
-import com.demo.bank.account.infrastructure.adapter.in.rest.request.TransactionAccountRequest;
-import com.demo.bank.account.infrastructure.adapter.in.rest.response.AccountResponse;
-import com.demo.bank.account.infrastructure.adapter.in.rest.response.TransactionAccountResponse;
-import com.demo.bank.account.infrastructure.adapter.out.persistance.mapper.AccountMapper;
-import com.demo.bank.account.infrastructure.adapter.out.persistance.mapper.AccountTransactionMapper;
+import com.demo.bank.account.infrastructure.adapter.in.rest.dto.request.AccountRequest;
+import com.demo.bank.account.infrastructure.adapter.in.rest.dto.request.TransactionAccountRequest;
+import com.demo.bank.account.infrastructure.adapter.in.rest.dto.response.AccountResponse;
+import com.demo.bank.account.infrastructure.adapter.in.rest.dto.response.TransactionAccountResponse;
+import com.demo.bank.account.infrastructure.adapter.in.rest.mapper.AccountRestMapper;
+import com.demo.bank.account.infrastructure.adapter.in.rest.mapper.AccountTransactionRestMapper;
 import jakarta.validation.Valid;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -23,8 +23,8 @@ public class AccountController {
     private final GetAccountByNumberUseCase getAccountByNumberUseCase;
     private final DebitAccountUseCase debitAccountUseCase;
     private final CreditAccountUseCase creditAccountUseCase;
-    private final AccountMapper mapper;
-    private final AccountTransactionMapper transactionMapper;
+    private final AccountRestMapper mapper;
+    private final AccountTransactionRestMapper transactionMapper;
 
     @GetMapping("/{id}")
     public Mono<AccountResponse> getAccount(@NonNull @PathVariable Long id){

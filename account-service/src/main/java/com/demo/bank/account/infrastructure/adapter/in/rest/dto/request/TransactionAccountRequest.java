@@ -1,4 +1,4 @@
-package com.demo.bank.account.infrastructure.adapter.in.rest.request;
+package com.demo.bank.account.infrastructure.adapter.in.rest.dto.request;
 
 import com.demo.bank.account.domain.enums.AppCurrency;
 import jakarta.validation.constraints.*;

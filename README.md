@@ -12,7 +12,11 @@ Proyecto de práctica con dos servicios Spring Boot:
 
 ## Configuración local
 
-1. Crear la configuración local:
+
+1. Crea tu archivo de configuración local:
 
    ```powershell
    Copy-Item .env.example .env
+   
+2. Edita .env y define tus contraseñas locales.
+El archivo .env no se versiona. Usa .env.example como plantilla.

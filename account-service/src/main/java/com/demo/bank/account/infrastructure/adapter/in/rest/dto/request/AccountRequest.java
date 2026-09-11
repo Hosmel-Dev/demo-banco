@@ -1,4 +1,4 @@
-package com.demo.bank.account.infrastructure.adapter.in.rest.request;
+package com.demo.bank.account.infrastructure.adapter.in.rest.dto.request;
 
 import com.demo.bank.account.domain.enums.AccountStatus;
 import com.demo.bank.account.domain.enums.AccountType;
@@ -8,13 +8,12 @@ import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 
 public record AccountRequest(
-        Long id,
         @NotBlank(message = "El número de cuenta es obligatorio")
         @Size(min = 10, max = 14, message = "El número de cuenta debe tener entre 10 y 14 caracteres")
         String accountNumber,
 
         @NotNull(message = "El tipo de cuenta es obligatorio")
-        AccountType type,
+        AccountType accountType,
 
         @NotNull(message = "El saldo inicial es obligatorio")
         @Min(value = 0, message = "El saldo mínimo debe ser 0.1")

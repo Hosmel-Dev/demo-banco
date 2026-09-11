@@ -4,11 +4,11 @@ spring:
   application:
     name: account-service
   r2dbc:
-    url: ${SPRING_R2DBC_URL}
-    username: ${SPRING_R2DBC_USERNAME}
-    password: ${SPRING_R2DBC_PASSWORD}
+    url: r2dbc:mysql://localhost:3307/account_db
+    username: user
+    password: "0000"
   flyway:
-    url: ${SPRING_FLYWAY_URL}
-    user: ${SPRING_FLYWAY_USERNAME}
-    password: ${SPRING_FLYWAY_PASSWORD}
-    locations: ${SPRING_FLYWAY_LOCATIONS}
+    url: jdbc:mysql://localhost:3307/account_db
+    user: user
+    password: "0000"
+    locations: classpath:db/migration

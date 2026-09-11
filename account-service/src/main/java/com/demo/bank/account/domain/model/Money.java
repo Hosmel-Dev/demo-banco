@@ -6,28 +6,28 @@ import java.math.BigDecimal;
 import java.util.Objects;
 
 
-public record AccountBalance(BigDecimal balance, AppCurrency currency){
+public record Money(BigDecimal amount, AppCurrency currency){
 
-    public AccountBalance {
-        Objects.requireNonNull(balance, "El saldo no puede ser Null");
+    public Money {
+        Objects.requireNonNull(amount, "El saldo no puede ser Null");
         Objects.requireNonNull(currency, "La moneda no puede ser Null");
-        if(balance.compareTo(BigDecimal.ZERO)<0){
+        if(amount.compareTo(BigDecimal.ZERO)<0){
             throw new IllegalArgumentException("El saldo no puede ser negativo");
         }
     }
 
-    public AccountBalance credit(BigDecimal amount){
+    public Money credit(BigDecimal amount){
         validateAmount(amount);
 
-        return new AccountBalance(
-                balance.add(amount),
+        return new Money(
+                amount.add(amount),
                 currency
         );
     }
 
     public Boolean validForDebit(BigDecimal amount){
         validateAmount(amount);
-        BigDecimal newBalance = balance.subtract(amount);
+        BigDecimal newBalance = amount.subtract(amount);
         return newBalance.compareTo(BigDecimal.ZERO) >= 0;
 
     }

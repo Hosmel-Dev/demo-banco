@@ -39,7 +39,7 @@ public class DebitAccountService implements DebitAccountUseCase {
             if(!account.getBalance().validForDebit(transactionAccountCommand.amount())){
                 return Mono.error(new InsufficientFundsException(
                         account.getAccountNumber(),
-                        account.getBalance().balance(),
+                        account.getBalance().amount(),
                         transactionAccountCommand.amount()
                 ));
             }
