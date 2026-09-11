@@ -1,3 +1,4 @@
+### Environment variables / secrets ###
 .env
 .env.*
 !.env.example
@@ -23,7 +24,7 @@ build/
 *.iml
 *.iws
 *.ipr
-out/
+/out/
 
 ### Eclipse ###
 .classpath
@@ -41,11 +42,6 @@ logs/
 ### OS ###
 .DS_Store
 Thumbs.db
-
-### Environment variables / secrets ###
-.env
-.env.*
-!.env.example
 
 ### Spring local configuration ###
 application-local.yml
