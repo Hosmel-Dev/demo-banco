@@ -1,0 +1,65 @@
+.env
+.env.*
+!.env.example
+
+### Maven ###
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+
+### Gradle ###
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+### IntelliJ IDEA ###
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+### Eclipse ###
+.classpath
+.project
+.settings/
+bin/
+
+### VS Code ###
+.vscode/
+
+### Logs ###
+*.log
+logs/
+
+### OS ###
+.DS_Store
+Thumbs.db
+
+### Environment variables / secrets ###
+.env
+.env.*
+!.env.example
+
+### Spring local configuration ###
+application-local.yml
+application-local.yaml
+application-local.properties
+
+### Temporary files ###
+*.tmp
+*.temp
+*.swp
+*.swo
+
+### Java compiled files ###
+*.class
+
+### Docker overrides / local configs ###
+docker-compose.override.yml

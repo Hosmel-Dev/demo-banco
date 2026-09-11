@@ -4,12 +4,12 @@ services:
     container_name: database-bank-mysql
     restart: on-failure
     environment:
-      MYSQL_ROOT_PASSWORD: root123
-      MYSQL_DATABASE: account_db
-      MYSQL_USER: user
-      MYSQL_PASSWORD: "0000"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+      MYSQL_DATABASE: "${ACCOUNT_DB_NAME}"
+      MYSQL_USER: "${ACCOUNT_DB_USER}"
+      MYSQL_PASSWORD: "${ACCOUNT_DB_PASSWORD}"
     ports:
-      - "3307:3306"
+      - "${MYSQL_PORT}:3306"
     healthcheck:
       test: [ "CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD" ]
       interval: 10s
@@ -24,11 +24,11 @@ services:
     container_name: database-bank-postgres
     restart: on-failure
     environment:
-      POSTGRES_DB: transaction_db
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: "10001"
+      POSTGRES_DB: "${TRANSACTION_DB_NAME}"
+      POSTGRES_USER: "${TRANSACTION_DB_USER}"
+      POSTGRES_PASSWORD: "${TRANSACTION_DB_PASSWORD}"
     ports:
-      - "5433:5432"
+      - "${POSTGRES_PORT}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user -d transaction_db"]
       interval: 10s
@@ -44,20 +44,20 @@ services:
     image: account-service:0.0.1
     restart: on-failure
     ports:
-      - "8100:8100"
+      - "${ACCOUNT_SERVICE_PORT}:8100"
     depends_on:
       mysql:
         condition: service_healthy
     environment:
       JAVA_OPTS: "-Xms256M -Xmx256M"
 
-      SPRING_R2DBC_URL: r2dbc:mysql://mysql:3306/account_db
-      SPRING_R2DBC_USERNAME: user
-      SPRING_R2DBC_PASSWORD: "0000"
+      SPRING_R2DBC_URL: "${ACCOUNT_R2DBC_URL}"
+      SPRING_R2DBC_USERNAME: "${ACCOUNT_DB_USER}"
+      SPRING_R2DBC_PASSWORD: "${ACCOUNT_DB_PASSWORD}"
 
-      SPRING_FLYWAY_URL: jdbc:mysql://mysql:3306/account_db
-      SPRING_FLYWAY_USERNAME: user
-      SPRING_FLYWAY_PASSWORD: "0000"
+      SPRING_FLYWAY_URL: "${ACCOUNT_FLYWAY_URL}"
+      SPRING_FLYWAY_USERNAME: "${ACCOUNT_DB_USER}"
+      SPRING_FLYWAY_PASSWORD: "${ACCOUNT_DB_PASSWORD}"
       SPRING_FLYWAY_LOCATIONS: classpath:db/migration
 
   transaction-service:
@@ -67,21 +67,23 @@ services:
     image: transaction-service:0.0.1
     restart: on-failure
     ports:
-      - "8101:8101"
+      - "${TRANSACTION_SERVICE_PORT}:8101"
     depends_on:
       postgres:
         condition: service_healthy
     environment:
       JAVA_OPTS: "-Xms256M -Xmx256M"
 
-      SPRING_R2DBC_URL: r2dbc:postgresql://postgres:5432/transaction_db
-      SPRING_R2DBC_USERNAME: user
-      SPRING_R2DBC_PASSWORD: "10001"
+      SPRING_R2DBC_URL: "${TRANSACTION_R2DBC_URL}"
+      SPRING_R2DBC_USERNAME: "${TRANSACTION_DB_USER}"
+      SPRING_R2DBC_PASSWORD: "${TRANSACTION_DB_PASSWORD}"
 
-      SPRING_FLYWAY_URL: jdbc:postgresql://postgres:5432/transaction_db
-      SPRING_FLYWAY_USERNAME: user
-      SPRING_FLYWAY_PASSWORD: "10001"
+      SPRING_FLYWAY_URL: "${TRANSACTION_FLYWAY_URL}"
+      SPRING_FLYWAY_USERNAME: "${TRANSACTION_DB_USER}"
+      SPRING_FLYWAY_PASSWORD: "${TRANSACTION_DB_PASSWORD}"
       SPRING_FLYWAY_LOCATIONS: classpath:db/migration
+
+      ACCOUNT_SERVICE_URL: "${ACCOUNT_SERVICE_BASE_URL}"
 
 volumes:
   mysql_data:

@@ -12,3 +12,6 @@ spring:
     user: ${SPRING_FLYWAY_USERNAME}
     password: ${SPRING_FLYWAY_PASSWORD}
     locations: ${SPRING_FLYWAY_LOCATIONS}
+web:
+  client:
+    account: ${ACCOUNT_SERVICE_URL}

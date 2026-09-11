@@ -22,7 +22,7 @@ RUN mkdir -p /app/tmp /app/logs \
 
 COPY --chown=admin:devops --from=build /app/target/*.jar /app/app.jar
 
-EXPOSE 8095
+EXPOSE 8100
 
 USER admin
 
