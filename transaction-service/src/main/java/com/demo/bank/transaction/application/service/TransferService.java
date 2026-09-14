@@ -39,14 +39,14 @@ public class TransferService implements TransferUseCase {
 
         return accountPort.findAccountIdByNumber(destinationAccountNumber)
                 .switchIfEmpty(Mono.error(new AccountNotFoundException(destinationAccountNumber)))
-                .flatMap(destinationAccountId->
+                .flatMap(accountValidationResult->
                         transactionRepositoryPortOut.save(transaction)
                                 .flatMap(saved ->
-                                        toTransfer(saved,money,originAccountId,destinationAccountId)
+                                        toTransfer(saved,money,originAccountId,accountValidationResult.id())
                                                 .then(markAsSuccessful(saved))
                                                 .map(successful ->
                                                         returnTransferResult(
-                                                                successful,originAccountId,destinationAccountId))));
+                                                                successful,originAccountId,accountValidationResult.id()))));
     }
 
     private CreateTransferResult returnTransferResult(

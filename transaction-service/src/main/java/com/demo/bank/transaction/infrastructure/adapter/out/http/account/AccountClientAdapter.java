@@ -1,16 +1,14 @@
-package com.demo.bank.transaction.infrastructure.adapter.out.persistance.http.account;
+package com.demo.bank.transaction.infrastructure.adapter.out.http.account;
 
-import com.demo.bank.transaction.application.dto.command.AccountTransferCommand;
-import com.demo.bank.transaction.application.dto.result.AccountTransferResult;
+import com.demo.bank.transaction.application.dto.result.AccountOperationResult;
+import com.demo.bank.transaction.application.dto.result.AccountValidationResult;
 import com.demo.bank.transaction.application.port.out.AccountPort;
-import com.demo.bank.transaction.domain.model.Account;
 import com.demo.bank.transaction.domain.model.Money;
 import com.demo.bank.transaction.infrastructure.exception.AccountServiceException;
 import com.demo.bank.transaction.infrastructure.exception.AccountServiceUnavailableException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientException;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
@@ -21,7 +19,7 @@ public class AccountClientAdapter implements AccountPort {
     private final WebClient accountWebClient;
 
     @Override
-    public Mono<AccountTransferResult> debit(Long id, Money money) {
+    public Mono<AccountOperationResult> debit(Long id, Money money) {
         AccountRequest request = AccountRequest.builder()
                 .id(id)
                 .amount(money.amount())
@@ -32,9 +30,9 @@ public class AccountClientAdapter implements AccountPort {
                 .uri("/accounts/debit")
                 .bodyValue(request)
                 .retrieve()
-                .bodyToMono(AccountResponse.class)
+                .bodyToMono(AccountTransactionResponse.class)
                 .map(accountResponse ->
-                        new AccountTransferResult(
+                        new AccountOperationResult(
                                 accountResponse.id(),
                                 accountResponse.balance().amount(),
                                 accountResponse.balance().currency()
@@ -46,7 +44,7 @@ public class AccountClientAdapter implements AccountPort {
     }
 
     @Override
-    public Mono<AccountTransferResult> credit(Long id, Money money) {
+    public Mono<AccountOperationResult> credit(Long id, Money money) {
         AccountRequest request = AccountRequest.builder()
                 .id(id)
                 .amount(money.amount())
@@ -57,9 +55,9 @@ public class AccountClientAdapter implements AccountPort {
                 .uri("/accounts/credit")
                 .bodyValue(request)
                 .retrieve()
-                .bodyToMono(AccountResponse.class)
+                .bodyToMono(AccountTransactionResponse.class)
                 .map(accountResponse ->
-                        new AccountTransferResult(
+                        new AccountOperationResult(
                                 accountResponse.id(),
                                 accountResponse.balance().amount(),
                                 accountResponse.balance().currency()
@@ -71,13 +69,45 @@ public class AccountClientAdapter implements AccountPort {
     }
 
     @Override
-    public Mono<Long> findAccountIdByNumber(String accountNumber) {
+    public Mono<AccountValidationResult> findAccountIdByNumber(String accountNumber) {
         return accountWebClient
                 .get()
                 .uri("/accounts/number/{account-number}",accountNumber)
                 .retrieve()
-                .bodyToMono(ValidationAccountResponse.class)
-                .map(ValidationAccountResponse::id)
+                .bodyToMono(AccountValidationResponse.class)
+                .map(accountValidationResponse->
+                        new AccountValidationResult(
+                                accountValidationResponse.id(),
+                                accountValidationResponse.status(),
+                                accountValidationResponse.balance().currency()
+                        ))
+                .onErrorResume(
+                        WebClientResponseException.class,
+                        ex -> Mono.empty()
+                )
+                .onErrorMap(
+                        WebClientResponseException.class,
+                        ex -> new AccountServiceException()
+                )
+                .onErrorMap(
+                        WebClientRequestException.class,
+                        ex->new AccountServiceUnavailableException()
+                );
+    }
+
+    @Override
+    public Mono<AccountValidationResult> findAccountById(Long id) {
+        return accountWebClient
+                .get()
+                .uri("/accounts/{id}", id)
+                .retrieve()
+                .bodyToMono(AccountValidationResponse.class)
+                .map(accountValidationResponse->
+                        new AccountValidationResult(
+                                accountValidationResponse.id(),
+                                accountValidationResponse.status(),
+                                accountValidationResponse.balance().currency()
+                        ))
                 .onErrorResume(
                         WebClientResponseException.class,
                         ex -> Mono.empty()

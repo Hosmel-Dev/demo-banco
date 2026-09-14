@@ -1,9 +1,9 @@
-package com.demo.bank.transaction.infrastructure.adapter.out.persistance;
+package com.demo.bank.transaction.infrastructure.adapter.out.persistence;
 
 import com.demo.bank.transaction.application.port.out.LedgerEntriesRepositoryPortOut;
 import com.demo.bank.transaction.domain.model.LedgerEntry;
-import com.demo.bank.transaction.infrastructure.adapter.out.persistance.mapper.LedgerEntryMapper;
-import com.demo.bank.transaction.infrastructure.adapter.out.persistance.repository.ReactiveLedgerEntryRepository;
+import com.demo.bank.transaction.infrastructure.adapter.out.persistence.mapper.LedgerEntryMapper;
+import com.demo.bank.transaction.infrastructure.adapter.out.persistence.repository.ReactiveLedgerEntryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;

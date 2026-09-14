@@ -1,4 +1,4 @@
-package com.demo.bank.transaction.infrastructure.adapter.out.persistance.http.account;
+package com.demo.bank.transaction.infrastructure.adapter.out.http.account;
 
 import com.demo.bank.transaction.domain.enums.AppCurrency;
 import lombok.Builder;

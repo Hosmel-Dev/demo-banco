@@ -1,9 +1,9 @@
-package com.demo.bank.transaction.infrastructure.adapter.out.persistance;
+package com.demo.bank.transaction.infrastructure.adapter.out.persistence;
 
 import com.demo.bank.transaction.application.port.out.TransactionRepositoryPortOut;
 import com.demo.bank.transaction.domain.model.FinancialTransaction;
-import com.demo.bank.transaction.infrastructure.adapter.out.persistance.mapper.TransferMapper;
-import com.demo.bank.transaction.infrastructure.adapter.out.persistance.repository.ReactiveTransactionRepository;
+import com.demo.bank.transaction.infrastructure.adapter.out.persistence.mapper.TransferMapper;
+import com.demo.bank.transaction.infrastructure.adapter.out.persistence.repository.ReactiveTransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;

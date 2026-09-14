@@ -1,8 +1,8 @@
-package com.demo.bank.transaction.infrastructure.adapter.out.persistance.mapper;
+package com.demo.bank.transaction.infrastructure.adapter.out.persistence.mapper;
 
 import com.demo.bank.transaction.domain.model.FinancialTransaction;
 import com.demo.bank.transaction.domain.model.Money;
-import com.demo.bank.transaction.infrastructure.adapter.out.persistance.entity.FinancialTransactionEntity;
+import com.demo.bank.transaction.infrastructure.adapter.out.persistence.entity.FinancialTransactionEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 

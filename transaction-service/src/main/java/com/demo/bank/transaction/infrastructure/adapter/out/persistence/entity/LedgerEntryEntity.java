@@ -1,8 +1,7 @@
-package com.demo.bank.transaction.infrastructure.adapter.out.persistance.entity;
+package com.demo.bank.transaction.infrastructure.adapter.out.persistence.entity;
 
 import com.demo.bank.transaction.domain.enums.AppCurrency;
 import com.demo.bank.transaction.domain.enums.Direction;
-import com.demo.bank.transaction.domain.model.Money;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
