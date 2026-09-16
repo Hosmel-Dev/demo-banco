@@ -105,7 +105,7 @@ Respuesta exitosa `200`:
 - Local: `http://localhost:8101/v1`
 - Entre contenedores: `http://transaction-service:8101/v1`
 
-Todos los endpoints siguientes requieren el header `Idempotency-Key`:
+Todos los endpoints siguientes requieren el header `Idempotency-Key` de 36 caracteres:
 
 ```http
 Idempotency-Key: <clave-del-cliente>
@@ -132,7 +132,7 @@ Respuesta exitosa `200`:
 ```json
 {
     "transactionId": 25,
-    "idempotencyKey": "z0",
+    "idempotencyKey": "123e4567-e89b-12d3-a456-426614174000",
     "type": "DEPOSIT",
     "amount": 3000,
     "currency": "PEN",
@@ -160,7 +160,7 @@ Respuesta exitosa `200`:
 ```json
 {
     "transactionId": 24,
-    "idempotencyKey": "b3",
+    "idempotencyKey": "123e4567-e89b-12d3-a456-426614174001",
     "type": "WITHDRAWAL",
     "amount": 1000,
     "currency": "PEN",
@@ -197,7 +197,7 @@ Respuesta exitosa `200`:
 ```json
 {
     "transactionId": 21,
-    "idempotencyKey": "a8",
+    "idempotencyKey": "123e4567-e89b-12d3-a456-426614174002",
     "type": "TRANSFER",
     "amount": 1000,
     "currency": "PEN",

@@ -11,6 +11,9 @@ import com.demo.bank.transaction.infrastructure.adapter.in.rest.request.CreateTr
 import com.demo.bank.transaction.infrastructure.adapter.in.rest.request.CreateTransferRequest;
 import com.demo.bank.transaction.infrastructure.adapter.in.rest.response.CreateTransactionResponse;
 import com.demo.bank.transaction.infrastructure.adapter.in.rest.response.CreateTransferResponse;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
@@ -28,24 +31,33 @@ public class TransactionController {
 
     @PostMapping("transactions/transfers")
     public Mono<CreateTransferResponse> registerTransference(
-            @RequestHeader("Idempotency-Key") String idempotencyKey,
-            @RequestBody CreateTransferRequest createTransferRequest){
+            @RequestHeader("Idempotency-Key")
+            @NotBlank(message = "Idempotency-Key es obligatorio")
+            @Size(min = 36, max = 36,message = "Idempotency-Key debe tener 36 caracteres")
+            String idempotencyKey,
+            @Valid @RequestBody CreateTransferRequest createTransferRequest){
         CreateTransferCommand command = transferRestMapper.fromRequestToCommand(idempotencyKey, createTransferRequest);
         return transferUseCase.execute(command).map(transferRestMapper::fromResultToResponse);
     }
 
     @PostMapping("/transactions/debit")
     public Mono<CreateTransactionResponse> registerDebit(
-            @RequestHeader("Idempotency-Key") String idempotencyKey,
-            @RequestBody CreateTransactionRequest createTransactionRequest){
+            @RequestHeader("Idempotency-Key")
+            @NotBlank(message = "Idempotency-Key es obligatorio")
+            @Size(min = 36, max = 36,message = "Idempotency-Key debe tener 36 caracteres")
+            String idempotencyKey,
+            @Valid @RequestBody CreateTransactionRequest createTransactionRequest){
         CreateTransactionCommand command = transactionRestMapper.toCommand(idempotencyKey, createTransactionRequest);
         return debitUseCase.execute(command).map(transactionRestMapper::toResponse);
     }
 
     @PostMapping("/transactions/credit")
     public Mono<CreateTransactionResponse> registerCredit(
-            @RequestHeader("Idempotency-Key") String idempotencyKey,
-            @RequestBody CreateTransactionRequest createTransactionRequest){
+            @RequestHeader("Idempotency-Key")
+            @NotBlank(message = "Idempotency-Key es obligatorio")
+            @Size(min = 36, max = 36,message = "Idempotency-Key debe tener 36 caracteres")
+            String idempotencyKey,
+            @Valid @RequestBody CreateTransactionRequest createTransactionRequest){
         CreateTransactionCommand command = transactionRestMapper.toCommand(idempotencyKey, createTransactionRequest);
         return creditUseCase.execute(command).map(transactionRestMapper::toResponse);
     }

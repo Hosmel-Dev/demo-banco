@@ -10,13 +10,14 @@ import java.math.BigDecimal;
 public record AccountRequest(
         @NotBlank(message = "El número de cuenta es obligatorio")
         @Size(min = 10, max = 14, message = "El número de cuenta debe tener entre 10 y 14 caracteres")
+        @Pattern(regexp = "\\d+")
         String accountNumber,
 
         @NotNull(message = "El tipo de cuenta es obligatorio")
         AccountType accountType,
 
         @NotNull(message = "El saldo inicial es obligatorio")
-        @Min(value = 0, message = "El saldo mínimo debe ser 0.1")
+        @Min(value = 0, message = "El saldo mínimo debe ser 0")
         BigDecimal balance,
 
         @NotNull(message = "La divisa es obligatoria")

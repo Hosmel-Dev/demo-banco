@@ -15,37 +15,28 @@ import tools.jackson.databind.exc.InvalidFormatException;
 
 import java.net.URI;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
     @ExceptionHandler(InsufficientFundsException.class)
     public ProblemDetail handleResourceNotFound(InsufficientFundsException exception){
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+
+
+        ProblemDetail problem = newProblem(
                 HttpStatusCode.valueOf(400),
-                exception.getMessage()
-        );
-
-        problem.setType(
-                URI.create("/problems/resource-not-enough-funds")
-        );
-
-        problem.setTitle("Saldo insuficiente");
-
-        problem.setProperty(
-                "code",
+                "/problems/resource-not-enough-funds",
+                "Saldo insuficiente",
+                exception.getMessage(),
                 exception.getCode()
         );
 
         problem.setProperty(
-                "Account number",
+                "accountNumber",
                 exception.getAccountNumber()
-        );
-
-        problem.setProperty(
-                "timestamp",
-                Instant.now()
         );
 
         return problem;
@@ -53,19 +44,11 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(DifferentCurrencyException.class)
     public ProblemDetail handleDifferentCurrency(DifferentCurrencyException exception){
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+        ProblemDetail problem = newProblem(
                 HttpStatusCode.valueOf(422),
-                exception.getMessage()
-        );
-
-        problem.setType(
-                URI.create("/problems/different-currency")
-        );
-
-        problem.setTitle("Divisa distinta");
-
-        problem.setProperty(
-                "code",
+                "/problems/different-currency",
+                "Divisa distinta",
+                exception.getMessage(),
                 exception.getCode()
         );
 
@@ -84,29 +67,16 @@ public class ApiExceptionHandler {
                 exception.getAccountNumber()
         );
 
-        problem.setProperty(
-                "timestamp",
-                Instant.now()
-        );
-
         return problem;
     }
 
     @ExceptionHandler(AccountNotActiveException.class)
     public ProblemDetail handelAccountNotActive(AccountNotActiveException exception){
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+        ProblemDetail problem = newProblem(
                 HttpStatusCode.valueOf(423),
-                exception.getMessage()
-        );
-
-        problem.setType(
-                URI.create("problems/account-not-active")
-        );
-
-        problem.setTitle("Cuenta no activa");
-
-        problem.setProperty(
-                "code",
+                "/problems/account-not-active",
+                "Cuenta no activa",
+                exception.getMessage(),
                 exception.getCode()
         );
 
@@ -125,19 +95,11 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(AccountNotFoundException.class)
     public ProblemDetail handleAccountNotFound(AccountNotFoundException exception){
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+        ProblemDetail problem = newProblem(
                 HttpStatus.NOT_FOUND,
-                exception.getMessage()
-        );
-
-        problem.setType(
-                URI.create("problems/account-not-found")
-        );
-
-        problem.setTitle("Cuenta no encontrada");
-
-        problem.setProperty(
-                "code",
+                "/problems/account-not-found",
+                "Cuenta no encontrada",
+                exception.getMessage(),
                 exception.getCode()
         );
 
@@ -150,15 +112,10 @@ public class ApiExceptionHandler {
 
         if(exception.getAccountNumber() == null){
             problem.setProperty(
-                    "id",
+                    "accountId",
                     exception.getId()
             );
         }
-
-        problem.setProperty(
-                "timestamp",
-                Instant.now()
-        );
 
         return problem;
     }
@@ -167,17 +124,13 @@ public class ApiExceptionHandler {
     public ProblemDetail handleValidationException(
             WebExchangeBindException exception
     ) {
-
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
-                HttpStatus.BAD_REQUEST,
-                "Uno o más campos no cumplen con las validaciones requeridas"
+        ProblemDetail problem = newProblem(
+                HttpStatusCode.valueOf(400),
+                "/problems/validation-error",
+                "Error de validación",
+                "Uno o más campos no cumplen con las validaciones requeridas",
+                "VALIDATION_ERROR"
         );
-
-        problem.setType(
-                URI.create("/problems/validation-error")
-        );
-
-        problem.setTitle("Error de validación");
 
         Map<String, String> errors = new HashMap<>();
 
@@ -190,23 +143,19 @@ public class ApiExceptionHandler {
                 );
 
         problem.setProperty("errors", errors);
-        problem.setProperty("timestamp", Instant.now());
 
         return problem;
     }
 
     @ExceptionHandler(ServerWebInputException.class)
     public ProblemDetail handleServerWebInput(ServerWebInputException exception){
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
-                HttpStatus.BAD_REQUEST,
-                "El formato del cuerpo de la petición es inválido o contiene valores no permitidos"
+        ProblemDetail problem = newProblem(
+                HttpStatusCode.valueOf(400),
+                "/problems/invalid-json",
+                "Petición no legible",
+                "El formato del cuerpo de la petición es inválido o contiene valores no permitidos",
+                "INVALID_REQUEST"
         );
-
-        problem.setType(
-                URI.create("problems/invalid-json")
-        );
-
-        problem.setTitle("Petición no legible");
 
         InvalidFormatException invalidCause =
                 findCause(exception, InvalidFormatException.class);
@@ -219,7 +168,10 @@ public class ApiExceptionHandler {
                     .getPropertyName();
 
             Object invalidValue = invalidCause.getValue();
-            Class<?> acceptedValues = invalidCause.getTargetType();
+            List<String> acceptedValues = Arrays.stream(
+                            invalidCause.getTargetType().getEnumConstants()
+                    ).map(value -> ((Enum<?>) value).name())
+                    .toList();
 
             // Caso 1: enum
 
@@ -239,11 +191,6 @@ public class ApiExceptionHandler {
             );
         }
 
-        problem.setProperty(
-                "timestamp",
-                Instant.now()
-        );
-
         return problem;
     }
 
@@ -261,5 +208,20 @@ public class ApiExceptionHandler {
             current = current.getCause();
         }
         return null;
+    }
+
+    private ProblemDetail newProblem(
+            HttpStatusCode status,
+            String type,
+            String title,
+            String detail,
+            String code
+    ){
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
+        problem.setType(URI.create(type));
+        problem.setTitle(title);
+        problem.setProperty("code", code);
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
     }
 }
