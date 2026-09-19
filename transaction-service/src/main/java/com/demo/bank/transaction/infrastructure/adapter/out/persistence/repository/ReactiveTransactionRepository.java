@@ -3,7 +3,9 @@ package com.demo.bank.transaction.infrastructure.adapter.out.persistence.reposit
 import com.demo.bank.transaction.infrastructure.adapter.out.persistence.entity.FinancialTransactionEntity;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Mono;
 
 @Repository
 public interface ReactiveTransactionRepository extends ReactiveCrudRepository<FinancialTransactionEntity, Long> {
+    Mono<FinancialTransactionEntity> findByIdempotencyKey(String idempotencyKey);
 }

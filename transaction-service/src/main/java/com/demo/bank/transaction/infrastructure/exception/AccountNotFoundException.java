@@ -1,5 +1,6 @@
-package com.demo.bank.transaction.domain.exception;
+package com.demo.bank.transaction.infrastructure.exception;
 
+import com.demo.bank.transaction.domain.exception.TransactionBusinessException;
 import lombok.Getter;
 
 @Getter

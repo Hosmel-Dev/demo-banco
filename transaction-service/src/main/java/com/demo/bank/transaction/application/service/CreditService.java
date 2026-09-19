@@ -29,13 +29,19 @@ public class CreditService implements CreditUseCase {
         var accountId = command.ledgerEntries().accountId();
         var money = createMoney(command);
         var transaction = createFinancialTransaction(command, money);
+        var idempotencyKey = command.idempotencyKey();
 
-        return transactionRepositoryPortOut.save(transaction)
-                .flatMap(saved ->
-                    toCredit(saved,accountId,money)
-                            .then(markAsSuccessful(saved)))
-                .map(successful ->
-                        toResult(successful,accountId));
+        return transactionRepositoryPortOut.findByKey(idempotencyKey)
+                .map(response ->
+                        toResult(response, accountId))
+                .switchIfEmpty(
+                        transactionRepositoryPortOut.save(transaction)
+                                .flatMap(saved ->
+                                    toCredit(saved,accountId,money)
+                                            .then(markAsSuccessful(saved)))
+                                .map(successful ->
+                                        toResult(successful,accountId))
+                );
 
     }
 

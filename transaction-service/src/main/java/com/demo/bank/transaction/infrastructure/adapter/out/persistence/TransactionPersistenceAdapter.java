@@ -19,4 +19,10 @@ public class TransactionPersistenceAdapter implements TransactionRepositoryPortO
         return transactionRepository.save(transferMapper.toEntity(financialTransaction))
                 .map(transferMapper::toDomain);
     }
+
+    @Override
+    public Mono<FinancialTransaction> findByKey(String idempotencyKey) {
+        return transactionRepository.findByIdempotencyKey(idempotencyKey)
+                .map(transferMapper::toDomain);
+    }
 }

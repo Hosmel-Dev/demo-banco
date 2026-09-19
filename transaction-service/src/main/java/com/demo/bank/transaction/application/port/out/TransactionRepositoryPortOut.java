@@ -5,4 +5,5 @@ import reactor.core.publisher.Mono;
 
 public interface TransactionRepositoryPortOut {
     Mono<FinancialTransaction> save(FinancialTransaction financialTransaction);
+    Mono<FinancialTransaction> findByKey(String idempotencyKey);
 }

@@ -1,6 +1,5 @@
 package com.demo.bank.transaction.application.service;
 
-import com.demo.bank.transaction.application.dto.command.CreateTransactionCommand;
 import com.demo.bank.transaction.application.dto.command.CreateTransferCommand;
 import com.demo.bank.transaction.application.dto.result.CreateTransferResult;
 import com.demo.bank.transaction.application.port.in.TransferUseCase;
@@ -10,16 +9,13 @@ import com.demo.bank.transaction.application.port.out.TransactionRepositoryPortO
 import com.demo.bank.transaction.domain.enums.Direction;
 import com.demo.bank.transaction.domain.enums.TransactionStatus;
 import com.demo.bank.transaction.domain.enums.TransactionType;
-import com.demo.bank.transaction.domain.exception.AccountNotFoundException;
+import com.demo.bank.transaction.infrastructure.exception.AccountNotFoundException;
 import com.demo.bank.transaction.domain.model.FinancialTransaction;
 import com.demo.bank.transaction.domain.model.LedgerEntry;
 import com.demo.bank.transaction.domain.model.Money;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
-
-import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -36,8 +32,19 @@ public class TransferService implements TransferUseCase {
         var originAccountId = command.ledgerEntries().originAccountId();
         var destinationAccountNumber = command.ledgerEntries().destinationAccountNumber();
         var transaction = createFinancialTransaction(command, money);
+        var idempotencyKey = command.idempotencyKey();
 
-        return accountPort.findAccountIdByNumber(destinationAccountNumber)
+        return transactionRepositoryPortOut.findByKey(idempotencyKey)
+                .flatMap(response -> {
+                    if (response.getType().equals(TransactionType.TRANSFER)){
+                        return searchDestinationAccountId(response.getId())
+                                .map(destinationAccountId ->
+                                        returnTransferResult(response, originAccountId, destinationAccountId));
+                    }
+                    return Mono.just(returnTransferResult(response, null, originAccountId));
+                })
+                .switchIfEmpty(
+                accountPort.findAccountIdByNumber(destinationAccountNumber)
                 .switchIfEmpty(Mono.error(new AccountNotFoundException(destinationAccountNumber)))
                 .flatMap(accountValidationResult->
                         transactionRepositoryPortOut.save(transaction)
@@ -46,7 +53,13 @@ public class TransferService implements TransferUseCase {
                                                 .then(markAsSuccessful(saved))
                                                 .map(successful ->
                                                         returnTransferResult(
-                                                                successful,originAccountId,accountValidationResult.id()))));
+                                                                successful,originAccountId,accountValidationResult.id())))));
+    }
+
+    private Mono<Long> searchDestinationAccountId(Long transactionId){
+        var direction = String.valueOf(Direction.CREDIT);
+        return ledgerEntriesRepositoryPortOut.findByTransaction(transactionId, direction)
+                .map(LedgerEntry::getAccountId);
     }
 
     private CreateTransferResult returnTransferResult(
@@ -67,7 +80,6 @@ public class TransferService implements TransferUseCase {
     }
 
     private Mono<FinancialTransaction> markAsSuccessful(FinancialTransaction transaction){
-        transaction.markAsSuccessful();
         return Mono.defer(()->{
                     transaction.markAsSuccessful();
                     return transactionRepositoryPortOut.save(transaction);

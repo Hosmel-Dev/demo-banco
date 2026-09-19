@@ -1,6 +1,6 @@
 package com.demo.bank.transaction.infrastructure.adapter.in.rest.exception;
 
-import com.demo.bank.transaction.domain.exception.AccountNotFoundException;
+import com.demo.bank.transaction.infrastructure.exception.AccountNotFoundException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -16,7 +16,6 @@ import tools.jackson.databind.exc.InvalidFormatException;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
@@ -117,7 +116,7 @@ public class ApiExceptionHandler {
                 "VALIDATION_ERROR"
         );
 
-        Map<String, String> errors = new HashMap<>();
+        Map<String, String> errors = new LinkedHashMap<>();
 
         exception.getFieldErrors()
                 .forEach(error ->

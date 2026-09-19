@@ -3,14 +3,14 @@ package com.demo.bank.transaction.infrastructure.adapter.out.http.account;
 import com.demo.bank.transaction.application.dto.result.AccountOperationResult;
 import com.demo.bank.transaction.application.dto.result.AccountValidationResult;
 import com.demo.bank.transaction.application.port.out.AccountPort;
+import com.demo.bank.transaction.infrastructure.exception.AccountNotFoundException;
 import com.demo.bank.transaction.domain.model.Money;
-import com.demo.bank.transaction.infrastructure.exception.AccountServiceException;
-import com.demo.bank.transaction.infrastructure.exception.AccountServiceUnavailableException;
+import com.demo.bank.transaction.infrastructure.exception.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
 @Component
@@ -30,6 +30,15 @@ public class AccountClientAdapter implements AccountPort {
                 .uri("/accounts/debit")
                 .bodyValue(request)
                 .retrieve()
+                .onStatus(
+                        HttpStatusCode::is4xxClientError,
+                        response -> response
+                                .bodyToMono(AccountServiceProblem.class)
+                                .map(problem -> mapClientError(id,problem))
+                                .switchIfEmpty(
+                                        Mono.just(new AccountServiceException())
+                                )
+                )
                 .bodyToMono(AccountTransactionResponse.class)
                 .map(accountResponse ->
                         new AccountOperationResult(
@@ -37,9 +46,9 @@ public class AccountClientAdapter implements AccountPort {
                                 accountResponse.balance().amount(),
                                 accountResponse.balance().currency()
                         ))
-                .onErrorResume(
-                        WebClientResponseException.NotFound.class,
-                        ex -> Mono.empty()
+                .onErrorMap(
+                        WebClientRequestException.class,
+                        ex -> new AccountServiceUnavailableException()
                 );
     }
 
@@ -55,6 +64,15 @@ public class AccountClientAdapter implements AccountPort {
                 .uri("/accounts/credit")
                 .bodyValue(request)
                 .retrieve()
+                .onStatus(
+                        HttpStatusCode::is4xxClientError,
+                        response -> response
+                                .bodyToMono(AccountServiceProblem.class)
+                                .map(problem -> mapClientError(id,problem))
+                                .switchIfEmpty(
+                                        Mono.just(new AccountServiceException())
+                                )
+                )
                 .bodyToMono(AccountTransactionResponse.class)
                 .map(accountResponse ->
                         new AccountOperationResult(
@@ -62,9 +80,9 @@ public class AccountClientAdapter implements AccountPort {
                                 accountResponse.balance().amount(),
                                 accountResponse.balance().currency()
                         ))
-                .onErrorResume(
-                        WebClientResponseException.class,
-                        ex -> Mono.empty()
+                .onErrorMap(
+                        WebClientRequestException.class,
+                        ex -> new AccountServiceUnavailableException()
                 );
     }
 
@@ -74,6 +92,12 @@ public class AccountClientAdapter implements AccountPort {
                 .get()
                 .uri("/accounts/number/{account-number}",accountNumber)
                 .retrieve()
+                .onStatus(
+                        HttpStatusCode::is4xxClientError,
+                        response -> response
+                                .bodyToMono(AccountServiceProblem.class)
+                                .map(problem -> mapClientError(accountNumber,problem))
+                )
                 .bodyToMono(AccountValidationResponse.class)
                 .map(accountValidationResponse->
                         new AccountValidationResult(
@@ -81,17 +105,9 @@ public class AccountClientAdapter implements AccountPort {
                                 accountValidationResponse.status(),
                                 accountValidationResponse.balance().currency()
                         ))
-                .onErrorResume(
-                        WebClientResponseException.class,
-                        ex -> Mono.empty()
-                )
-                .onErrorMap(
-                        WebClientResponseException.class,
-                        ex -> new AccountServiceException()
-                )
                 .onErrorMap(
                         WebClientRequestException.class,
-                        ex->new AccountServiceUnavailableException()
+                        ex -> new AccountServiceUnavailableException()
                 );
     }
 
@@ -101,6 +117,15 @@ public class AccountClientAdapter implements AccountPort {
                 .get()
                 .uri("/accounts/{id}", id)
                 .retrieve()
+                .onStatus(
+                        HttpStatusCode::is4xxClientError,
+                        response -> response
+                                .bodyToMono(AccountServiceProblem.class)
+                                .map(problem -> mapClientError(id,problem))
+                                .switchIfEmpty(
+                                        Mono.just(new AccountServiceException())
+                                )
+                )
                 .bodyToMono(AccountValidationResponse.class)
                 .map(accountValidationResponse->
                         new AccountValidationResult(
@@ -108,18 +133,40 @@ public class AccountClientAdapter implements AccountPort {
                                 accountValidationResponse.status(),
                                 accountValidationResponse.balance().currency()
                         ))
-                .onErrorResume(
-                        WebClientResponseException.class,
-                        ex -> Mono.empty()
-                )
-                .onErrorMap(
-                        WebClientResponseException.class,
-                        ex -> new AccountServiceException()
-                )
                 .onErrorMap(
                         WebClientRequestException.class,
-                        ex->new AccountServiceUnavailableException()
+                        ex -> new AccountServiceUnavailableException()
                 );
+    }
+
+    private RuntimeException mapClientError(Long id, AccountServiceProblem problemDetail){
+        String code = problemDetail.code() != null
+                ? problemDetail.code()
+                : "";
+
+        return switch (code) {
+            case "ACCOUNT_NOT_FOUND" -> new AccountNotFoundException(id);
+            case "ACCOUNT_NOT_ACTIVE" -> new AccountNotActiveException(id);
+            case "WRONG_CURRENCY" -> new DifferentCurrencyException();
+            case "INSUFFICIENT_FUNDS" -> new InsufficientFundsException();
+            default -> new AccountServiceException();
+        };
+
+    }
+
+    private RuntimeException mapClientError(String  id, AccountServiceProblem problemDetail){
+        String code = problemDetail.code() != null
+                ? problemDetail.code()
+                : "";
+
+        return switch (code) {
+            case "ACCOUNT_NOT_FOUND" -> new AccountNotFoundException(id);
+            case "ACCOUNT_NOT_ACTIVE" -> new AccountNotActiveException(id);
+            case "WRONG_CURRENCY" -> new DifferentCurrencyException();
+            case "INSUFFICIENT_FUNDS" -> new InsufficientFundsException();
+            default -> new AccountServiceException();
+        };
+
     }
 
 

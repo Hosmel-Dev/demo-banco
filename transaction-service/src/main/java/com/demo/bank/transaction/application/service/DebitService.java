@@ -30,13 +30,19 @@ public class DebitService implements DebitUseCase {
         var money = createMoney(command);
         var accountId = command.ledgerEntries().accountId();
         var transaction = createFinancialTransaction(command, money);
+        var idempotencyKey = command.idempotencyKey();
 
-        return transactionRepositoryPortOut.save(transaction)
-                .flatMap(saved ->
-                    toDebit(saved, money, accountId)
-                            .then(markAsSuccessful(saved,accountId)))
-                .map(successful ->
-                        toResult(successful, accountId));
+        return transactionRepositoryPortOut.findByKey(idempotencyKey)
+                .map(response ->
+                        toResult(response, accountId))
+                .switchIfEmpty(
+                        transactionRepositoryPortOut.save(transaction)
+                                .flatMap(saved ->
+                                        toDebit(saved, money, accountId)
+                                                .then(markAsSuccessful(saved,accountId)))
+                                .map(successful ->
+                                        toResult(successful, accountId))
+                );
 
     }
 

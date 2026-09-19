@@ -6,6 +6,7 @@ import com.demo.bank.transaction.infrastructure.adapter.out.persistence.mapper.L
 import com.demo.bank.transaction.infrastructure.adapter.out.persistence.repository.ReactiveLedgerEntryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Component
@@ -25,7 +26,8 @@ public class LedgerEntryPersistenceAdapter implements LedgerEntriesRepositoryPor
     }
 
     @Override
-    public Mono<LedgerEntry> findByTransaction(Long id) {
-        return null;
+    public Mono<LedgerEntry> findByTransaction(Long id, String direction) {
+        return reactiveLedgerEntryRepository.findByTransactionIdAndDirection(id, direction)
+                .map(mapper::toDomain);
     }
 }

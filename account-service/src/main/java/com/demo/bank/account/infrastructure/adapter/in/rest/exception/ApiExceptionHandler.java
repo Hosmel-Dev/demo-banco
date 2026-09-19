@@ -16,7 +16,7 @@ import tools.jackson.databind.exc.InvalidFormatException;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -132,7 +132,7 @@ public class ApiExceptionHandler {
                 "VALIDATION_ERROR"
         );
 
-        Map<String, String> errors = new HashMap<>();
+        Map<String, String> errors = new LinkedHashMap<>();
 
         exception.getFieldErrors()
                 .forEach(error ->
