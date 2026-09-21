@@ -16,25 +16,25 @@ public record Money(BigDecimal amount, AppCurrency currency){
         }
     }
 
-    public Money credit(BigDecimal amount){
-        validateAmount(amount);
+    public Money credit(BigDecimal amountEntrance){
+        validateAmount(amountEntrance);
 
         return new Money(
-                amount.add(amount),
+                amount.add(amountEntrance),
                 currency
         );
     }
 
-    public Boolean validForDebit(BigDecimal amount){
-        validateAmount(amount);
-        BigDecimal newBalance = amount.subtract(amount);
+    public Boolean validForDebit(BigDecimal amountEntrance){
+        validateAmount(amountEntrance);
+        BigDecimal newBalance = amount.subtract(amountEntrance);
         return newBalance.compareTo(BigDecimal.ZERO) >= 0;
 
     }
 
-    private static void validateAmount(BigDecimal amount){
-        Objects.requireNonNull(amount, "El monto no puede ser nulo");
-        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+    private static void validateAmount(BigDecimal amountEntrance){
+        Objects.requireNonNull(amountEntrance, "El monto no puede ser nulo");
+        if (amountEntrance.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("El monto debe ser mayor que cero");
         }
     }

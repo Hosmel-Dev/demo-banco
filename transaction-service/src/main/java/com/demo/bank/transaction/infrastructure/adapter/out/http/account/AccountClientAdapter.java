@@ -19,9 +19,9 @@ public class AccountClientAdapter implements AccountPort {
     private final WebClient accountWebClient;
 
     @Override
-    public Mono<AccountOperationResult> debit(Long id, Money money) {
+    public Mono<AccountOperationResult> debit(Long accountId, Money money) {
         AccountRequest request = AccountRequest.builder()
-                .id(id)
+                .id(accountId)
                 .amount(money.amount())
                 .currency(money.currency())
                 .build();
@@ -34,10 +34,16 @@ public class AccountClientAdapter implements AccountPort {
                         HttpStatusCode::is4xxClientError,
                         response -> response
                                 .bodyToMono(AccountServiceProblem.class)
-                                .map(problem -> mapClientError(id,problem))
+                                .map(problem -> mapClientError(accountId,problem))
                                 .switchIfEmpty(
                                         Mono.just(new AccountServiceException())
                                 )
+                )
+                .onStatus(
+                        HttpStatusCode::is5xxServerError,
+                        response -> Mono.just(
+                                new AccountServiceUnavailableException()
+                        )
                 )
                 .bodyToMono(AccountTransactionResponse.class)
                 .map(accountResponse ->
@@ -53,9 +59,9 @@ public class AccountClientAdapter implements AccountPort {
     }
 
     @Override
-    public Mono<AccountOperationResult> credit(Long id, Money money) {
+    public Mono<AccountOperationResult> credit(Long accountId, Money money) {
         AccountRequest request = AccountRequest.builder()
-                .id(id)
+                .id(accountId)
                 .amount(money.amount())
                 .currency(money.currency())
                 .build();
@@ -68,10 +74,16 @@ public class AccountClientAdapter implements AccountPort {
                         HttpStatusCode::is4xxClientError,
                         response -> response
                                 .bodyToMono(AccountServiceProblem.class)
-                                .map(problem -> mapClientError(id,problem))
+                                .map(problem -> mapClientError(accountId,problem))
                                 .switchIfEmpty(
                                         Mono.just(new AccountServiceException())
                                 )
+                )
+                .onStatus(
+                        HttpStatusCode::is5xxServerError,
+                        response -> Mono.just(
+                                new AccountServiceUnavailableException()
+                        )
                 )
                 .bodyToMono(AccountTransactionResponse.class)
                 .map(accountResponse ->
@@ -98,33 +110,11 @@ public class AccountClientAdapter implements AccountPort {
                                 .bodyToMono(AccountServiceProblem.class)
                                 .map(problem -> mapClientError(accountNumber,problem))
                 )
-                .bodyToMono(AccountValidationResponse.class)
-                .map(accountValidationResponse->
-                        new AccountValidationResult(
-                                accountValidationResponse.id(),
-                                accountValidationResponse.status(),
-                                accountValidationResponse.balance().currency()
-                        ))
-                .onErrorMap(
-                        WebClientRequestException.class,
-                        ex -> new AccountServiceUnavailableException()
-                );
-    }
-
-    @Override
-    public Mono<AccountValidationResult> findAccountById(Long id) {
-        return accountWebClient
-                .get()
-                .uri("/accounts/{id}", id)
-                .retrieve()
                 .onStatus(
-                        HttpStatusCode::is4xxClientError,
-                        response -> response
-                                .bodyToMono(AccountServiceProblem.class)
-                                .map(problem -> mapClientError(id,problem))
-                                .switchIfEmpty(
-                                        Mono.just(new AccountServiceException())
-                                )
+                        HttpStatusCode::is5xxServerError,
+                        response -> Mono.just(
+                                new AccountServiceUnavailableException()
+                        )
                 )
                 .bodyToMono(AccountValidationResponse.class)
                 .map(accountValidationResponse->
@@ -139,35 +129,66 @@ public class AccountClientAdapter implements AccountPort {
                 );
     }
 
-    private RuntimeException mapClientError(Long id, AccountServiceProblem problemDetail){
+    @Override
+    public Mono<AccountValidationResult> findAccountById(Long accountId) {
+        return accountWebClient
+                .get()
+                .uri("/accounts/{id}", accountId)
+                .retrieve()
+                .onStatus(
+                        HttpStatusCode::is4xxClientError,
+                        response -> response
+                                .bodyToMono(AccountServiceProblem.class)
+                                .map(problem -> mapClientError(accountId,problem))
+                                .switchIfEmpty(
+                                        Mono.just(new AccountServiceException())
+                                )
+                )
+                .onStatus(
+                        HttpStatusCode::is5xxServerError,
+                        response -> Mono.just(
+                                new AccountServiceUnavailableException()
+                        )
+                )
+                .bodyToMono(AccountValidationResponse.class)
+                .map(accountValidationResponse->
+                        new AccountValidationResult(
+                                accountValidationResponse.id(),
+                                accountValidationResponse.status(),
+                                accountValidationResponse.balance().currency()
+                        ))
+                .onErrorMap(
+                        WebClientRequestException.class,
+                        ex -> new AccountServiceUnavailableException()
+                );
+    }
+
+    private RuntimeException mapClientError(Long accountId, AccountServiceProblem problemDetail){
         String code = problemDetail.code() != null
                 ? problemDetail.code()
                 : "";
 
         return switch (code) {
-            case "ACCOUNT_NOT_FOUND" -> new AccountNotFoundException(id);
-            case "ACCOUNT_NOT_ACTIVE" -> new AccountNotActiveException(id);
+            case "ACCOUNT_NOT_FOUND" -> new AccountNotFoundException(accountId);
+            case "ACCOUNT_NOT_ACTIVE" -> new AccountNotActiveException(accountId);
             case "WRONG_CURRENCY" -> new DifferentCurrencyException();
-            case "INSUFFICIENT_FUNDS" -> new InsufficientFundsException();
+            case "INSUFFICIENT_FUNDS" -> new InsufficientFundsException(accountId);
             default -> new AccountServiceException();
         };
 
     }
 
-    private RuntimeException mapClientError(String  id, AccountServiceProblem problemDetail){
+    private RuntimeException mapClientError(String  accountNumber, AccountServiceProblem problemDetail){
         String code = problemDetail.code() != null
                 ? problemDetail.code()
                 : "";
 
-        return switch (code) {
-            case "ACCOUNT_NOT_FOUND" -> new AccountNotFoundException(id);
-            case "ACCOUNT_NOT_ACTIVE" -> new AccountNotActiveException(id);
-            case "WRONG_CURRENCY" -> new DifferentCurrencyException();
-            case "INSUFFICIENT_FUNDS" -> new InsufficientFundsException();
-            default -> new AccountServiceException();
-        };
-
+        if (code.equals("ACCOUNT_NOT_FOUND")) {
+            return new AccountNotFoundException(accountNumber);
+        }
+        else {
+            return new AccountServiceException();
+        }
     }
-
 
 }

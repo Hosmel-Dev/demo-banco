@@ -1,7 +1,11 @@
 package com.demo.bank.transaction.infrastructure.adapter.in.rest.exception;
 
+import com.demo.bank.transaction.infrastructure.adapter.out.http.account.AccountServiceProblem;
+import com.demo.bank.transaction.infrastructure.exception.AccountNotActiveException;
 import com.demo.bank.transaction.infrastructure.exception.AccountNotFoundException;
 
+import com.demo.bank.transaction.infrastructure.exception.DifferentCurrencyException;
+import com.demo.bank.transaction.infrastructure.exception.InsufficientFundsException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
@@ -29,7 +33,7 @@ public class ApiExceptionHandler {
                 "/problems/account-not-found",
                 "Cuenta no encontrada",
                 exception.getMessage(),
-                "ACCOUNT_NOT_FOUND"
+                exception.getCode()
         );
 
         if (exception.getAccountNumber() != null) {
@@ -46,9 +50,51 @@ public class ApiExceptionHandler {
             );
         }
 
+        return problem;
+    }
+
+    @ExceptionHandler(AccountNotActiveException.class)
+    private ProblemDetail handleAccountNotActive(AccountNotActiveException exception){
+        ProblemDetail problem = newProblem(
+                HttpStatus.valueOf(423),
+                "/problems/account-not-active",
+                "Cuenta no activa",
+                exception.getMessage(),
+                exception.getCode()
+        );
+
         problem.setProperty(
-                "accountRole",
-                "DESTINATION"
+                "accountId",
+                exception.getAccountId()
+        );
+
+        return problem;
+    }
+
+    @ExceptionHandler(DifferentCurrencyException.class)
+    private ProblemDetail handleDifferentCurrency(DifferentCurrencyException exception){
+        return  newProblem(
+                HttpStatusCode.valueOf(422),
+                "/problems/different-currency",
+                "Divisa distinta",
+                exception.getMessage(),
+                exception.getCode()
+        );
+    }
+
+    @ExceptionHandler(InsufficientFundsException.class)
+    public ProblemDetail handleInsufficientFunds(InsufficientFundsException exception){
+        ProblemDetail problem = newProblem(
+                HttpStatusCode.valueOf(400),
+                "/problems/resource-not-enough-funds",
+                "Saldo insuficiente",
+                exception.getMessage(),
+                exception.getCode()
+        );
+
+        problem.setProperty(
+                "accountNumber",
+                exception.getAccountId()
         );
 
         return problem;

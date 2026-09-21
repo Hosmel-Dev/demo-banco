@@ -9,6 +9,7 @@ import com.demo.bank.transaction.application.port.out.TransactionRepositoryPortO
 import com.demo.bank.transaction.domain.enums.Direction;
 import com.demo.bank.transaction.domain.enums.TransactionStatus;
 import com.demo.bank.transaction.domain.enums.TransactionType;
+import com.demo.bank.transaction.domain.exception.SameAccountTransferException;
 import com.demo.bank.transaction.infrastructure.exception.AccountNotFoundException;
 import com.demo.bank.transaction.domain.model.FinancialTransaction;
 import com.demo.bank.transaction.domain.model.LedgerEntry;
@@ -16,6 +17,8 @@ import com.demo.bank.transaction.domain.model.Money;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -45,7 +48,7 @@ public class TransferService implements TransferUseCase {
                 })
                 .switchIfEmpty(
                 accountPort.findAccountIdByNumber(destinationAccountNumber)
-                .switchIfEmpty(Mono.error(new AccountNotFoundException(destinationAccountNumber)))
+                //.switchIfEmpty(Mono.error(new AccountNotFoundException(destinationAccountNumber)))
                 .flatMap(accountValidationResult->
                         transactionRepositoryPortOut.save(transaction)
                                 .flatMap(saved ->

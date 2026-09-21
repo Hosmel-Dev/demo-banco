@@ -1,8 +1,15 @@
 package com.demo.bank.transaction.infrastructure.exception;
 
+import com.demo.bank.transaction.infrastructure.adapter.out.http.account.AccountServiceProblem;
+import lombok.Getter;
+
+@Getter
 public class InsufficientFundsException extends InfrastructureException {
-    public InsufficientFundsException() {
-        super("INSUFFICIENT_FUNDS","La cuenta %s no cuenta con suficiente saldo %s"
-                .formatted(1, 1));
+    private final Long accountId;
+    public InsufficientFundsException(Long accountId) {
+        super("INSUFFICIENT_FUNDS","La cuenta %s no cuenta con suficiente saldo"
+                .formatted(accountId));
+        this.accountId = accountId;
     }
+
 }

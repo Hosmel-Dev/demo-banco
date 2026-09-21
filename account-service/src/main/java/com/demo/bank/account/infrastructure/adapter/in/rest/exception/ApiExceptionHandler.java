@@ -23,9 +23,7 @@ import java.util.Map;
 @RestControllerAdvice
 public class ApiExceptionHandler {
     @ExceptionHandler(InsufficientFundsException.class)
-    public ProblemDetail handleResourceNotFound(InsufficientFundsException exception){
-
-
+    public ProblemDetail handleInsufficientFunds(InsufficientFundsException exception){
         ProblemDetail problem = newProblem(
                 HttpStatusCode.valueOf(400),
                 "/problems/resource-not-enough-funds",
