@@ -19,10 +19,12 @@ public class FinancialTransaction {
     private LocalDateTime createdAt;
 
     public void markAsSuccessful(){
-        if (status != TransactionStatus.PENDING){
-            System.out.println();
-        }
         this.status = TransactionStatus.SUCCESS;
+        this.createdAt = LocalDateTime.now();
+    }
+
+    public void markAsFailed(){
+        this.status = TransactionStatus.FAILED;
         this.createdAt = LocalDateTime.now();
     }
 

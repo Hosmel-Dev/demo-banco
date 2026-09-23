@@ -4,12 +4,12 @@ import lombok.Getter;
 
 @Getter
 public class AccountNotFoundException extends AccountBusinessException {
-    private final Long id;
+    private final Long accountId;
     private final String accountNumber;
-    public AccountNotFoundException(Long id){
+    public AccountNotFoundException(Long accountId){
       super("ACCOUNT_NOT_FOUND", "La cuenta con id %s no existe"
-              .formatted(id));
-      this.id = id;
+              .formatted(accountId));
+      this.accountId = accountId;
       this.accountNumber = null;
     }
 
@@ -17,6 +17,6 @@ public class AccountNotFoundException extends AccountBusinessException {
         super("ACCOUNT_NOT_FOUND", "La cuenta con número %s no existe"
                 .formatted(accountNumber));
         this.accountNumber = accountNumber;
-        this.id = null;
+        this.accountId = null;
     }
 }

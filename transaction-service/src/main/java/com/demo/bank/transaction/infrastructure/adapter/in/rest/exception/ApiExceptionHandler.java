@@ -1,11 +1,9 @@
 package com.demo.bank.transaction.infrastructure.adapter.in.rest.exception;
 
-import com.demo.bank.transaction.infrastructure.adapter.out.http.account.AccountServiceProblem;
-import com.demo.bank.transaction.infrastructure.exception.AccountNotActiveException;
-import com.demo.bank.transaction.infrastructure.exception.AccountNotFoundException;
+import com.demo.bank.transaction.domain.exception.FailedTransactionException;
+import com.demo.bank.transaction.domain.exception.SameAccountTransferException;
 
-import com.demo.bank.transaction.infrastructure.exception.DifferentCurrencyException;
-import com.demo.bank.transaction.infrastructure.exception.InsufficientFundsException;
+import com.demo.bank.transaction.infrastructure.exception.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
@@ -26,38 +24,11 @@ import java.util.LinkedHashMap;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
-    @ExceptionHandler(AccountNotFoundException.class)
-    private ProblemDetail handleAccountNotFound(AccountNotFoundException exception) {
+    @ExceptionHandler(SameAccountTransferException.class)
+    public ProblemDetail handleSameAccountTransfer(SameAccountTransferException exception){
         ProblemDetail problem = newProblem(
-                HttpStatus.NOT_FOUND,
-                "/problems/account-not-found",
-                "Cuenta no encontrada",
-                exception.getMessage(),
-                exception.getCode()
-        );
-
-        if (exception.getAccountNumber() != null) {
-            problem.setProperty(
-                    "accountNumber",
-                    exception.getAccountNumber()
-            );
-        }
-
-        if (exception.getAccountId() != null) {
-            problem.setProperty(
-                    "accountId",
-                    exception.getAccountId()
-            );
-        }
-
-        return problem;
-    }
-
-    @ExceptionHandler(AccountNotActiveException.class)
-    private ProblemDetail handleAccountNotActive(AccountNotActiveException exception){
-        ProblemDetail problem = newProblem(
-                HttpStatus.valueOf(423),
-                "/problems/account-not-active",
+                HttpStatus.valueOf(422),
+                "/problems/same-account-transfer",
                 "Cuenta no activa",
                 exception.getMessage(),
                 exception.getCode()
@@ -72,14 +43,30 @@ public class ApiExceptionHandler {
     }
 
     @ExceptionHandler(DifferentCurrencyException.class)
-    private ProblemDetail handleDifferentCurrency(DifferentCurrencyException exception){
-        return  newProblem(
-                HttpStatusCode.valueOf(422),
-                "/problems/different-currency",
-                "Divisa distinta",
+    public ProblemDetail handleDifferentCurrency(DifferentCurrencyException exception){
+        ProblemDetail problem = newProblem(
+                HttpStatus.valueOf(422),
+                "/problems/same-account-transfer",
+                "Cuentas de transferencia iguales",
                 exception.getMessage(),
                 exception.getCode()
         );
+
+        if (exception.getCurrencyOriginAccount() != null ||
+                exception.getCurrencyDestinationAccount() != null){
+
+            problem.setProperty(
+                    "currencyOriginAccount",
+                    exception.getCurrencyOriginAccount()
+            );
+
+            problem.setProperty(
+                    "currencyDestinationAccount",
+                    exception.getCurrencyDestinationAccount()
+            );
+        }
+
+        return problem;
     }
 
     @ExceptionHandler(InsufficientFundsException.class)
@@ -98,6 +85,91 @@ public class ApiExceptionHandler {
         );
 
         return problem;
+    }
+
+    @ExceptionHandler(AccountNotFoundException.class)
+    public ProblemDetail handleAccountNotFound(AccountNotFoundException exception){
+        ProblemDetail problem = newProblem(
+                HttpStatus.NOT_FOUND,
+                "/problems/account-not-found",
+                "Cuenta no encontrada",
+                exception.getMessage(),
+                exception.getCode()
+        );
+
+        if(exception.getAccountId() == null){
+            problem.setProperty(
+                    "accountNumber",
+                    exception.getAccountNumber()
+            );
+        }
+
+        if(exception.getAccountNumber() == null){
+            problem.setProperty(
+                    "accountId",
+                    exception.getAccountId()
+            );
+        }
+
+        return problem;
+    }
+
+    @ExceptionHandler(AccountNotActiveException.class)
+    public ProblemDetail handleAccountNotActive(AccountNotActiveException exception){
+        ProblemDetail problem = newProblem(
+                HttpStatusCode.valueOf(423),
+                "/problems/account-not-active",
+                "Cuenta no activa",
+                exception.getMessage(),
+                exception.getCode()
+        );
+
+        problem.setProperty(
+                "accountStatus",
+                exception.getAccountStatus()
+        );
+
+        return problem;
+    }
+
+    @ExceptionHandler(FailedTransactionException.class)
+    public ProblemDetail handleFailedTransaction(FailedTransactionException exception){
+        ProblemDetail problem = newProblem(
+                HttpStatusCode.valueOf(422),
+                "/problems/unprocessable-content",
+                "Fallo en la transacción",
+                exception.getMessage(),
+                exception.getCode()
+        );
+
+        problem.setProperty(
+                "transactionId",
+                exception.getTransactionId()
+        );
+
+        return problem;
+    }
+
+    @ExceptionHandler(AccountServiceException.class)
+    public ProblemDetail handleAccountService(AccountServiceException exception){
+        return newProblem(
+                HttpStatusCode.valueOf(502),
+                "/problems/communication-error",
+                "Error en comunicación con servicio",
+                exception.getMessage(),
+                exception.getCode()
+        );
+    }
+
+    @ExceptionHandler(AccountServiceUnavailableException.class)
+    public ProblemDetail handleAccountServiceUnavailable(AccountServiceUnavailableException exception){
+        return newProblem(
+                HttpStatusCode.valueOf(503),
+                "/problems/service-unavailable",
+                "Servicio no disponible",
+                exception.getMessage(),
+                exception.getCode()
+        );
     }
 
     @ExceptionHandler(MissingRequestValueException.class)

@@ -101,7 +101,7 @@ public class ApiExceptionHandler {
                 exception.getCode()
         );
 
-        if(exception.getId() == null){
+        if(exception.getAccountId() == null){
             problem.setProperty(
                     "accountNumber",
                     exception.getAccountNumber()
@@ -111,7 +111,7 @@ public class ApiExceptionHandler {
         if(exception.getAccountNumber() == null){
             problem.setProperty(
                     "accountId",
-                    exception.getId()
+                    exception.getAccountId()
             );
         }
 
