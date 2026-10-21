@@ -109,6 +109,10 @@ public class AccountClientAdapter implements AccountPort {
                         response -> response
                                 .bodyToMono(AccountServiceProblem.class)
                                 .map(problem -> mapClientError(accountNumber,problem))
+                                .switchIfEmpty(Mono.fromSupplier(() ->
+                                        response.statusCode().value() == 404
+                                                ? new AccountNotFoundException(accountNumber)
+                                                : new AccountServiceException()))
                 )
                 .onStatus(
                         HttpStatusCode::is5xxServerError,
@@ -140,9 +144,10 @@ public class AccountClientAdapter implements AccountPort {
                         response -> response
                                 .bodyToMono(AccountServiceProblem.class)
                                 .map(problem -> mapClientError(accountId,problem))
-                                .switchIfEmpty(
-                                        Mono.just(new AccountServiceException())
-                                )
+                                .switchIfEmpty(Mono.fromSupplier(() ->
+                                        response.statusCode().value() == 404
+                                                ? new AccountNotFoundException(accountId)
+                                                : new AccountServiceException()))
                 )
                 .onStatus(
                         HttpStatusCode::is5xxServerError,

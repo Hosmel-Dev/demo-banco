@@ -39,14 +39,9 @@ public class TransferService implements TransferUseCase {
         return transactionRepositoryPortOut.findByKey(idempotencyKey)
                 .flatMap(response -> {
                     if (response.getStatus().equals(TransactionStatus.PENDING)){
+                        /// SERÍA PERTINENTE AÑADIR UN SERVICIO O ELEMENTO QUE REVISE LAS TRANSACCIONES PENDIENTES
                         return Mono.error(new FailedTransactionException(response.getId()));
                     }
-
-//                    if (response.getType().equals(TransactionType.TRANSFER) || response.getStatus().equals(TransactionStatus.FAILED)){
-//                        return searchDestinationAccountId(response.getId())
-//                                .map(destinationAccountId ->
-//                                        returnTransferResult(response, originAccountId, destinationAccountId));
-//                    }
                     return Mono.just(returnTransferResult(response, originAccountId, null));
                 })
                 .switchIfEmpty(
@@ -85,12 +80,6 @@ public class TransferService implements TransferUseCase {
                         }));
     }
 
-//    private Mono<Long> searchDestinationAccountId(Long transactionId){
-//        var direction = String.valueOf(Direction.CREDIT);
-//        return ledgerEntriesRepositoryPortOut.findByTransaction(transactionId, direction)
-//                .map(LedgerEntry::getAccountId);
-//    }
-
     private CreateTransferResult returnTransferResult(
             FinancialTransaction transaction,
             Long originAccountId,
@@ -111,7 +100,8 @@ public class TransferService implements TransferUseCase {
     private Mono<FinancialTransaction> markAsSuccessful(FinancialTransaction transaction){
         return Mono.defer(()->{
             transaction.markAsSuccessful();
-            return transactionRepositoryPortOut.save(transaction);
+            return transactionRepositoryPortOut.save(transaction)
+                    .switchIfEmpty(Mono.error(new FailedTransactionException(transaction.getId())));
         });
     }
 

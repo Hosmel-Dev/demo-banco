@@ -29,7 +29,7 @@ public class ApiExceptionHandler {
         ProblemDetail problem = newProblem(
                 HttpStatus.valueOf(422),
                 "/problems/same-account-transfer",
-                "Cuenta no activa",
+                "Cuenta de origen y destino idénticas",
                 exception.getMessage(),
                 exception.getCode()
         );
@@ -46,8 +46,8 @@ public class ApiExceptionHandler {
     public ProblemDetail handleDifferentCurrency(DifferentCurrencyException exception){
         ProblemDetail problem = newProblem(
                 HttpStatus.valueOf(422),
-                "/problems/same-account-transfer",
-                "Cuentas de transferencia iguales",
+                "/problems/different-currency",
+                "Divisa distinta",
                 exception.getMessage(),
                 exception.getCode()
         );
@@ -80,7 +80,7 @@ public class ApiExceptionHandler {
         );
 
         problem.setProperty(
-                "accountNumber",
+                "accountId",
                 exception.getAccountId()
         );
 
