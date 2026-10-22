@@ -4,6 +4,7 @@ import com.demo.bank.account.domain.enums.UserRole;
 
 public record ValidateIdentityResponse (
         String username,
-        UserRole role
+        UserRole role,
+        String token
 ){
 }

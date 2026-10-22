@@ -5,6 +5,7 @@ import com.demo.bank.account.application.dto.result.ValidateIdentityResult;
 import com.demo.bank.account.application.port.in.ValidateIdentityUseCase;
 import com.demo.bank.account.application.port.out.IdentityRepositoryPortOut;
 import com.demo.bank.account.application.port.out.PasswordVerifierPort;
+import com.demo.bank.account.application.port.out.TokenIssuePort;
 import com.demo.bank.account.domain.exception.UnauthorizedUserException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,7 @@ import reactor.core.publisher.Mono;
 public class ValidateIdentity implements ValidateIdentityUseCase {
     private final IdentityRepositoryPortOut identityRepositoryPortOut;
     private final PasswordVerifierPort passwordVerifierPort;
+    private final TokenIssuePort tokenIssuePort;
 
     @Override
     public Mono<ValidateIdentityResult> execute(ValidateIdentityCommand validateIdentityCommand) {
@@ -29,10 +31,16 @@ public class ValidateIdentity implements ValidateIdentityUseCase {
                             if (!valid) {
                                 return Mono.error(new UnauthorizedUserException());
                             }
-                            return Mono.just(
-                                    new ValidateIdentityResult(
-                                            user.getUsername(),
-                                            user.getRole()));
+                            return tokenIssuePort.issue(
+                                    user.getId(),
+                                    user.getUsername(),
+                                    user.getRole())
+                                    .map(
+                                            token -> new ValidateIdentityResult(
+                                                    user.getUsername(),
+                                                    user.getRole(),
+                                                    token)
+                                    );
                         })
                 );
     }

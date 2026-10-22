@@ -17,3 +17,9 @@ spring:
       name: "admin"
       password: "admin"
       roles: ADMIN
+bank:
+  jwt:
+    public-key: 'D:\Demos spring boot\bank-keys\public.pem'
+    private-key: 'D:\Demos spring boot\bank-keys\private.pem'
+#    public-key: ${BANK_JWT_PUBLIC_KEY}
+#    private-key: ${BANK_JWT_PRIVATE_KEY}
