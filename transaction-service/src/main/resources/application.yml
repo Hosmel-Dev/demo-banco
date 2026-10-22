@@ -12,6 +12,11 @@ spring:
     user: user
     password: "10001"
     locations: classpath:db/migration
+  security:
+    user:
+      name: admin
+      password: qwerty
+      roles: ADMIN
 web:
   client:
     account: http://account-service:8100/v

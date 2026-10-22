@@ -12,3 +12,8 @@ spring:
     user: user
     password: "0000"
     locations: classpath:db/migration
+  security:
+    user:
+      name: "admin"
+      password: "admin"
+      roles: ADMIN
