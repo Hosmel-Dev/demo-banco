@@ -26,10 +26,12 @@ public class SecurityConfiguration {
                 .csrf(csrf -> csrf.disable())
                 .authorizeExchange(auth -> auth
                         .pathMatchers(HttpMethod.POST, NO_AUTH_LIST).permitAll()
-                        .pathMatchers(HttpMethod.POST, "/v1/accounts","/v1/accounts/**").authenticated()
-                        .pathMatchers(HttpMethod.GET,  "/v1/accounts","/v1/accounts/**").authenticated()
-                        .anyExchange().authenticated()
+                        .pathMatchers(HttpMethod.GET, "/auth/me").authenticated()
+                        //.pathMatchers(HttpMethod.POST, "/v1/accounts","/v1/accounts/**").authenticated()
+                        //.pathMatchers(HttpMethod.GET,  "/v1/accounts","/v1/accounts/**").authenticated()
+                        .anyExchange().denyAll()
                 )
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt(withDefaults()))
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable);
         return http.build();
