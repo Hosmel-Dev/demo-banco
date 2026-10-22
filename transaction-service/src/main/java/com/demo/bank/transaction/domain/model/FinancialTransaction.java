@@ -17,6 +17,8 @@ public class FinancialTransaction {
     private TransactionStatus status;
     private String description;
     private LocalDateTime createdAt;
+    private Long originAccountId;
+    private Long destinationAccountId;
 
     public void markAsSuccessful(){
         this.status = TransactionStatus.SUCCESS;

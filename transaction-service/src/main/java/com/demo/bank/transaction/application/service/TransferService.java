@@ -7,6 +7,7 @@ import com.demo.bank.transaction.application.port.out.AccountPort;
 import com.demo.bank.transaction.application.port.out.LedgerEntriesRepositoryPortOut;
 import com.demo.bank.transaction.application.port.out.TransactionRepositoryPortOut;
 import com.demo.bank.transaction.domain.enums.Direction;
+import com.demo.bank.transaction.domain.enums.EntryKind;
 import com.demo.bank.transaction.domain.enums.TransactionStatus;
 import com.demo.bank.transaction.domain.enums.TransactionType;
 import com.demo.bank.transaction.domain.exception.*;
@@ -42,7 +43,7 @@ public class TransferService implements TransferUseCase {
                         /// SERÍA PERTINENTE AÑADIR UN SERVICIO O ELEMENTO QUE REVISE LAS TRANSACCIONES PENDIENTES
                         return Mono.error(new FailedTransactionException(response.getId()));
                     }
-                    return Mono.just(returnTransferResult(response, originAccountId, null));
+                    return Mono.just(returnTransferResult(response));
                 })
                 .switchIfEmpty(
                 accountPort.findAccountIdByNumber(destinationAccountNumber)
@@ -67,23 +68,17 @@ public class TransferService implements TransferUseCase {
                                                 money.currency().toString()
                                         ));
                             }
+                            transaction.setDestinationAccountId(accountValidationResult.id());
                             return transactionRepositoryPortOut.save(transaction)
                                     .flatMap(saved ->
                                             toTransfer(saved,money,originAccountId,accountValidationResult.id())
                                                     .then(markAsSuccessful(saved)).map(
-                                                            successful ->
-                                                                    returnTransferResult(
-                                                                            successful,
-                                                                            originAccountId,
-                                                                            accountValidationResult.id()
-                                                                    )));
+                                                            this::returnTransferResult));
                         }));
     }
 
     private CreateTransferResult returnTransferResult(
-            FinancialTransaction transaction,
-            Long originAccountId,
-            Long destinationAccountId){
+            FinancialTransaction transaction){
         return new CreateTransferResult(
                 transaction.getId(),
                 transaction.getIdempotencyKey(),
@@ -91,8 +86,8 @@ public class TransferService implements TransferUseCase {
                 transaction.getMoney().amount(),
                 transaction.getMoney().currency(),
                 transaction.getStatus(),
-                originAccountId,
-                destinationAccountId,
+                transaction.getOriginAccountId(),
+                transaction.getDestinationAccountId(),
                 transaction.getCreatedAt()
         );
     }
@@ -199,6 +194,7 @@ public class TransferService implements TransferUseCase {
                 .money(money)
                 .status(TransactionStatus.PENDING)
                 .description(command.transaction().description())
+                .originAccountId(command.ledgerEntries().originAccountId())
                 .build();
     }
 
@@ -213,6 +209,7 @@ public class TransferService implements TransferUseCase {
                 .transactionId(transaction.getId())
                 .direction(direction)
                 .money(money)
+                .entryKind(EntryKind.ORIGINAL)
                 .build();
     }
 

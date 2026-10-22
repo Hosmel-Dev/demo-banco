@@ -15,7 +15,8 @@ public record CreateTransferRequest(
         @Pattern(regexp = "\\d+")
         String destinationAccountNumber,
         @NotNull(message = "El monto es obligatorio")
-        @DecimalMin(value = "0.1", message = "El saldo mínimo debe ser 0.1")
+        @DecimalMin(value = "0.01", message = "El saldo mínimo debe ser 0.01")
+        @DecimalMax(value = "100000.00", message = "El saldo máximo debe ser 100000.00")
         BigDecimal amount,
         @NotNull(message = "La divisa es obligatoria")
         AppCurrency currency,

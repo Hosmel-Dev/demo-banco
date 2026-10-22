@@ -52,6 +52,7 @@ public class AccountClientAdapter implements AccountPort {
                                 accountResponse.balance().amount(),
                                 accountResponse.balance().currency()
                         ))
+                .switchIfEmpty(Mono.error(new AccountServiceException()))
                 .onErrorMap(
                         WebClientRequestException.class,
                         ex -> new AccountServiceUnavailableException()
@@ -92,6 +93,7 @@ public class AccountClientAdapter implements AccountPort {
                                 accountResponse.balance().amount(),
                                 accountResponse.balance().currency()
                         ))
+                .switchIfEmpty(Mono.error(new AccountServiceException()))
                 .onErrorMap(
                         WebClientRequestException.class,
                         ex -> new AccountServiceUnavailableException()
@@ -127,6 +129,7 @@ public class AccountClientAdapter implements AccountPort {
                                 accountValidationResponse.status(),
                                 accountValidationResponse.balance().currency()
                         ))
+                .switchIfEmpty(Mono.error(new AccountServiceException()))
                 .onErrorMap(
                         WebClientRequestException.class,
                         ex -> new AccountServiceUnavailableException()
@@ -162,6 +165,7 @@ public class AccountClientAdapter implements AccountPort {
                                 accountValidationResponse.status(),
                                 accountValidationResponse.balance().currency()
                         ))
+                .switchIfEmpty(Mono.error(new AccountServiceException()))
                 .onErrorMap(
                         WebClientRequestException.class,
                         ex -> new AccountServiceUnavailableException()

@@ -36,4 +36,8 @@ public class FinancialTransactionEntity {
     private String description;
     @Column("created_at")
     private LocalDateTime createdAt;
+    @Column("origin_account_id")
+    private Long originAccountId;
+    @Column("destination_account_id")
+    private Long destinationAccountId;
 }

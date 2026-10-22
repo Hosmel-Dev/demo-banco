@@ -2,6 +2,7 @@ package com.demo.bank.transaction.infrastructure.adapter.out.persistence.entity;
 
 import com.demo.bank.transaction.domain.enums.AppCurrency;
 import com.demo.bank.transaction.domain.enums.Direction;
+import com.demo.bank.transaction.domain.enums.EntryKind;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
@@ -33,4 +34,10 @@ public class LedgerEntryEntity {
     private AppCurrency currency;
     @Column("created_at")
     private LocalDateTime createdAt;
+    @Column("entry_kind")
+    private EntryKind entryKind;
+    @Column("reverses_entry_id")
+    private Long reversesEntryId;
+    @Column("description")
+    private String description;
 }
