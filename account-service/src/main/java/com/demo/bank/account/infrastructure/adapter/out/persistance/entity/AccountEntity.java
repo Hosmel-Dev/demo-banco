@@ -40,4 +40,7 @@ public class AccountEntity {
 
     @Column("created_at")
     private LocalDateTime createdAt;
+
+    @Column("owner_user_id")
+    private Long ownerUserId;
 }

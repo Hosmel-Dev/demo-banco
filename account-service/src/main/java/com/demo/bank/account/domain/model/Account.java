@@ -14,5 +14,6 @@ public class Account {
     private Money balance;
     private AccountStatus status;
     private LocalDateTime createdAt;
+    private Long ownerUserId;
 
 }

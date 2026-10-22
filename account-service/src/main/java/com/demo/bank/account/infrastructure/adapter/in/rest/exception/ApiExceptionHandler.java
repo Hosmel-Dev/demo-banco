@@ -1,9 +1,6 @@
 package com.demo.bank.account.infrastructure.adapter.in.rest.exception;
 
-import com.demo.bank.account.domain.exception.AccountNotActiveException;
-import com.demo.bank.account.domain.exception.AccountNotFoundException;
-import com.demo.bank.account.domain.exception.DifferentCurrencyException;
-import com.demo.bank.account.domain.exception.InsufficientFundsException;
+import com.demo.bank.account.domain.exception.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
@@ -22,6 +19,16 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+    @ExceptionHandler(UnauthorizedUserException.class)
+    public ProblemDetail handleUnauthorizedUser(UnauthorizedUserException exception){
+        return newProblem(
+                HttpStatus.valueOf(401),
+                "/problems/unauthorized-user",
+                "Credenciales inválidas",
+                exception.getMessage(),
+                exception.getCode()
+        );
+    }
     @ExceptionHandler(InsufficientFundsException.class)
     public ProblemDetail handleInsufficientFunds(InsufficientFundsException exception){
         ProblemDetail problem = newProblem(
