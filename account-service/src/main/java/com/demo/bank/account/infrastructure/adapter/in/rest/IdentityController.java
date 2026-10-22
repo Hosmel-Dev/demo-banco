@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
+import java.util.Objects;
 
 @RestController
 @RequiredArgsConstructor
@@ -29,6 +30,6 @@ public class IdentityController {
 
     @GetMapping("/me")
     public Mono<Map<String, String>> me(@AuthenticationPrincipal Jwt jwt) {
-        return Mono.just(Map.of("userId", jwt.getSubject()));
+        return Mono.just(Map.of("userId", Objects.requireNonNull(jwt.getSubject())));
     }
 }

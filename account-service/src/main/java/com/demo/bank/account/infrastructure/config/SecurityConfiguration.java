@@ -27,6 +27,7 @@ public class SecurityConfiguration {
                 .authorizeExchange(auth -> auth
                         .pathMatchers(HttpMethod.POST, NO_AUTH_LIST).permitAll()
                         .pathMatchers(HttpMethod.GET, "/auth/me").authenticated()
+                        .pathMatchers(HttpMethod.GET, "/v1/accounts/*").authenticated()
                         //.pathMatchers(HttpMethod.POST, "/v1/accounts","/v1/accounts/**").authenticated()
                         //.pathMatchers(HttpMethod.GET,  "/v1/accounts","/v1/accounts/**").authenticated()
                         .anyExchange().denyAll()

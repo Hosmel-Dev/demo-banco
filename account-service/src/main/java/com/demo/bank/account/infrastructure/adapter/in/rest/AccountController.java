@@ -10,8 +10,12 @@ import com.demo.bank.account.infrastructure.adapter.in.rest.mapper.AccountTransa
 import jakarta.validation.Valid;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
+
+import java.util.Objects;
 
 
 @RestController
@@ -27,8 +31,8 @@ public class AccountController {
     private final AccountTransactionRestMapper transactionMapper;
 
     @GetMapping("/{id}")
-    public Mono<AccountResponse> getAccount(@NonNull @PathVariable Long id){
-        return getAccountsUseCase.getAccount(id).map(mapper::toResponse);
+    public Mono<AccountResponse> getAccount(@NonNull @PathVariable Long id, @AuthenticationPrincipal Jwt jwt){
+        return getAccountsUseCase.getAccount(id, Long.valueOf(Objects.requireNonNull(jwt.getSubject()))).map(mapper::toResponse);
     }
 
     @GetMapping("/number/{account-number}")
