@@ -127,7 +127,8 @@ public class AccountClientAdapter implements AccountPort {
                         new AccountValidationResult(
                                 accountValidationResponse.id(),
                                 accountValidationResponse.status(),
-                                accountValidationResponse.balance().currency()
+                                accountValidationResponse.balance().currency(),
+                                accountValidationResponse.ownerUserId()
                         ))
                 .switchIfEmpty(Mono.error(new AccountServiceException()))
                 .onErrorMap(
@@ -163,7 +164,8 @@ public class AccountClientAdapter implements AccountPort {
                         new AccountValidationResult(
                                 accountValidationResponse.id(),
                                 accountValidationResponse.status(),
-                                accountValidationResponse.balance().currency()
+                                accountValidationResponse.balance().currency(),
+                                accountValidationResponse.ownerUserId()
                         ))
                 .switchIfEmpty(Mono.error(new AccountServiceException()))
                 .onErrorMap(

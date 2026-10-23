@@ -12,11 +12,15 @@ spring:
     user: user
     password: "10001"
     locations: classpath:db/migration
-  security:
-    user:
-      name: admin
-      password: qwerty
-      roles: ADMIN
+#  security:
+#    user:
+#      name: admin
+#      password: qwerty
+#      roles: ADMIN
+bank:
+  jwt:
+    public-key: 'D:\Demos spring boot\bank-keys\public.pem'
+
 web:
   client:
-    account: http://account-service:8100/v
+    account: http://account-service:8100/v1

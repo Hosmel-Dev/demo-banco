@@ -8,6 +8,7 @@ public record AccountResponse (
         String accountNumber,
         AccountType accountType,
         MoneyResponse balance,
-        AccountStatus status
+        AccountStatus status,
+        Long ownerUserId
 ){
 }

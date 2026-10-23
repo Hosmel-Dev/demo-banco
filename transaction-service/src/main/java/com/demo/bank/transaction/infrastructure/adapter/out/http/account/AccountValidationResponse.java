@@ -16,7 +16,9 @@ public record AccountValidationResponse(
         String accountType,
         MoneyResponse balance,
         @NotBlank
-        String status
+        String status,
+        @NotNull
+        Long ownerUserId
 ){
     public record MoneyResponse(
             @NotNull

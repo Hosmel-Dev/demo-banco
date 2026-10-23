@@ -15,11 +15,16 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
+import java.util.Map;
+import java.util.Objects;
+
 @RequiredArgsConstructor
-@RequestMapping("/v1")
+@RequestMapping("/v1/transactions")
 @RestController
 public class TransactionController {
     private final TransferUseCase transferUseCase;
@@ -29,7 +34,7 @@ public class TransactionController {
     private final TransactionRestMapper transactionRestMapper;
 
 
-    @PostMapping("transactions/transfers")
+    @PostMapping("/transfers")
     public Mono<CreateTransferResponse> registerTransference(
             @RequestHeader("Idempotency-Key")
             @NotBlank(message = "Idempotency-Key es obligatorio")
@@ -40,18 +45,19 @@ public class TransactionController {
         return transferUseCase.execute(command).map(transferRestMapper::fromResultToResponse);
     }
 
-    @PostMapping("/transactions/debit")
+    @PostMapping("/debit")
     public Mono<CreateTransactionResponse> registerDebit(
             @RequestHeader("Idempotency-Key")
             @NotBlank(message = "Idempotency-Key es obligatorio")
             @Size(min = 36, max = 36,message = "Idempotency-Key debe tener 36 caracteres")
             String idempotencyKey,
-            @Valid @RequestBody CreateTransactionRequest createTransactionRequest){
+            @Valid @RequestBody CreateTransactionRequest createTransactionRequest,
+            @AuthenticationPrincipal Jwt jwt){
         CreateTransactionCommand command = transactionRestMapper.toCommand(idempotencyKey, createTransactionRequest);
-        return debitUseCase.execute(command).map(transactionRestMapper::toResponse);
+        return debitUseCase.execute(command, Long.valueOf(Objects.requireNonNull(jwt.getSubject()))).map(transactionRestMapper::toResponse);
     }
 
-    @PostMapping("/transactions/credit")
+    @PostMapping("/credit")
     public Mono<CreateTransactionResponse> registerCredit(
             @RequestHeader("Idempotency-Key")
             @NotBlank(message = "Idempotency-Key es obligatorio")
@@ -60,5 +66,10 @@ public class TransactionController {
             @Valid @RequestBody CreateTransactionRequest createTransactionRequest){
         CreateTransactionCommand command = transactionRestMapper.toCommand(idempotencyKey, createTransactionRequest);
         return creditUseCase.execute(command).map(transactionRestMapper::toResponse);
+    }
+
+    @GetMapping("/me")
+    public Mono<Map<String, String>> me(@AuthenticationPrincipal Jwt jwt) {
+        return Mono.just(Map.of("userId", Objects.requireNonNull(jwt.getSubject())));
     }
 }

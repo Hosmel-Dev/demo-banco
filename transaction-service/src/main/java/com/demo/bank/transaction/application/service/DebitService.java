@@ -26,7 +26,7 @@ public class DebitService implements DebitUseCase {
     private final LedgerEntriesRepositoryPortOut ledgerEntriesRepositoryPortOut;
 
     @Override
-    public Mono<CreateTransactionResult> execute(CreateTransactionCommand command) {
+    public Mono<CreateTransactionResult> execute(CreateTransactionCommand command, Long requestUserId) {
         var money = createMoney(command);
         var accountId = command.ledgerEntries().accountId();
         var transaction = createFinancialTransaction(command, money);
