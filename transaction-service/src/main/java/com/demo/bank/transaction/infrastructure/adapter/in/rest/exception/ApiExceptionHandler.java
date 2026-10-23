@@ -42,6 +42,17 @@ public class ApiExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(ForbiddenAccessException.class)
+    public ProblemDetail handleForbiddenAccess(ForbiddenAccessException exception){
+        return newProblem(
+                HttpStatus.valueOf(403),
+                "/problems/forbidden-access",
+                "Solo tiene acceso a las cuentas correspondientes a las credenciales",
+                exception.getMessage(),
+                exception.getCode()
+        );
+    }
+
     @ExceptionHandler(DifferentCurrencyException.class)
     public ProblemDetail handleDifferentCurrency(DifferentCurrencyException exception){
         ProblemDetail problem = newProblem(

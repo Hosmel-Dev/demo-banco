@@ -20,6 +20,7 @@ public class SecurityConfiguration {
                 .csrf(csrf -> csrf.disable())
                 .authorizeExchange(auth -> auth
                         .pathMatchers(HttpMethod.GET, "/v1/transactions/me").authenticated()
+                        .pathMatchers(HttpMethod.POST, "/v1/transactions/debit").authenticated()
                         .anyExchange().denyAll()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(withDefaults()))

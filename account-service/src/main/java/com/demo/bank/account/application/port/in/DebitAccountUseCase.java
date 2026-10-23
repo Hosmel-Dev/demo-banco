@@ -5,5 +5,5 @@ import com.demo.bank.account.application.dto.result.TransactionAccountResult;
 import reactor.core.publisher.Mono;
 
 public interface DebitAccountUseCase {
-    Mono<TransactionAccountResult> execute(TransactionAccountCommand transactionAccountCommand);
+    Mono<TransactionAccountResult> execute(TransactionAccountCommand transactionAccountCommand, Long requesterUserId);
 }

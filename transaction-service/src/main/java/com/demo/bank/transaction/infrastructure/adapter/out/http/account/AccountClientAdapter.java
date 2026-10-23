@@ -7,6 +7,7 @@ import com.demo.bank.transaction.infrastructure.exception.AccountNotFoundExcepti
 import com.demo.bank.transaction.domain.model.Money;
 import com.demo.bank.transaction.infrastructure.exception.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -14,9 +15,16 @@ import org.springframework.web.reactive.function.client.WebClientRequestExceptio
 import reactor.core.publisher.Mono;
 
 @Component
-@RequiredArgsConstructor
 public class AccountClientAdapter implements AccountPort {
     private final WebClient accountWebClient;
+    private final String internalDebitKey;
+
+    public AccountClientAdapter(
+            WebClient accountWebClient,
+            @Value("${bank.internal.debit.key}") String internalDebitKey) {
+        this.accountWebClient = accountWebClient;
+        this.internalDebitKey = internalDebitKey;
+    }
 
     @Override
     public Mono<AccountOperationResult> debit(Long accountId, Money money) {
@@ -28,6 +36,7 @@ public class AccountClientAdapter implements AccountPort {
         return accountWebClient
                 .post()
                 .uri("/accounts/debit")
+                .header("X-Internal-Service-Key", internalDebitKey)
                 .bodyValue(request)
                 .retrieve()
                 .onStatus(
@@ -184,6 +193,7 @@ public class AccountClientAdapter implements AccountPort {
             case "ACCOUNT_NOT_ACTIVE" -> new AccountNotActiveException(accountId);
             case "WRONG_CURRENCY" -> new DifferentCurrencyException();
             case "INSUFFICIENT_FUNDS" -> new InsufficientFundsException(accountId);
+            case "FORBIDDEN_ACCESS" -> new ForbiddenAccessException();
             default -> new AccountServiceException();
         };
 

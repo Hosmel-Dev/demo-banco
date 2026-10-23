@@ -5,13 +5,12 @@ import com.demo.bank.account.application.dto.result.TransactionAccountResult;
 import com.demo.bank.account.application.port.in.DebitAccountUseCase;
 import com.demo.bank.account.application.port.out.AccountRepositoryPortOut;
 import com.demo.bank.account.domain.enums.AccountStatus;
-import com.demo.bank.account.domain.exception.AccountNotActiveException;
-import com.demo.bank.account.domain.exception.AccountNotFoundException;
-import com.demo.bank.account.domain.exception.DifferentCurrencyException;
-import com.demo.bank.account.domain.exception.InsufficientFundsException;
+import com.demo.bank.account.domain.exception.*;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+
+import java.util.Objects;
 
 @AllArgsConstructor
 @Service
@@ -20,8 +19,11 @@ public class DebitAccountService implements DebitAccountUseCase {
     private final AccountRepositoryPortOut repositoryPortOut;
 
     @Override
-    public Mono<TransactionAccountResult> execute(TransactionAccountCommand transactionAccountCommand) {
+    public Mono<TransactionAccountResult> execute(TransactionAccountCommand transactionAccountCommand, Long requesterUserId) {
         return repositoryPortOut.findById(transactionAccountCommand.id()).flatMap(account -> {
+            if(!Objects.equals(account.getOwnerUserId(), requesterUserId)){
+                return Mono.error(new ForbiddenAccessException());
+            }
             if(!account.getStatus().equals(AccountStatus.ACTIVE)){
                 return Mono.error(new AccountNotActiveException(
                         account.getAccountNumber(),

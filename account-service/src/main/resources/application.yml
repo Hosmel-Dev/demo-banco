@@ -21,5 +21,9 @@ bank:
   jwt:
     public-key: 'D:\Demos spring boot\bank-keys\public.pem'
     private-key: 'D:\Demos spring boot\bank-keys\private.pem'
+  internal:
+    debit:
+      key: "Up9ln1DHLfp5Q3ocr4EpEwfB6Vp095bRr0Ah0P6PIm8="
+
 #    public-key: ${BANK_JWT_PUBLIC_KEY}
 #    private-key: ${BANK_JWT_PRIVATE_KEY}

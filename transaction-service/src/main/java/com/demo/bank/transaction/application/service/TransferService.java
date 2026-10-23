@@ -37,44 +37,47 @@ public class TransferService implements TransferUseCase {
         var transaction = createFinancialTransaction(command, money);
         var idempotencyKey = command.idempotencyKey();
 
-        return transactionRepositoryPortOut.findByKey(idempotencyKey)
-                .flatMap(response -> {
-                    if (response.getStatus().equals(TransactionStatus.PENDING)){
-                        /// SERÍA PERTINENTE AÑADIR UN SERVICIO O ELEMENTO QUE REVISE LAS TRANSACCIONES PENDIENTES
-                        return Mono.error(new FailedTransactionException(response.getId()));
-                    }
-                    return Mono.just(returnTransferResult(response));
-                })
-                .switchIfEmpty(
-                accountPort.findAccountIdByNumber(destinationAccountNumber)
-                //.switchIfEmpty(Mono.error(new AccountNotFoundException(destinationAccountNumber)))
-                        .flatMap(accountValidationResult-> {
-                            if (Objects.equals(originAccountId, accountValidationResult.id())){
-                                return Mono.error(
-                                        new SameAccountTransferException(
-                                                originAccountId
-                                        ));
-                            }
-                            if (!accountValidationResult.status().equals("ACTIVE")) {
-                                return Mono.error(
-                                        new AccountNotActiveException(
-                                                accountValidationResult.status()
-                                        ));
-                            }
-                            if (!accountValidationResult.currency().equals(money.currency())) {
-                                return Mono.error(
-                                        new DifferentCurrencyException(
-                                                accountValidationResult.currency().toString(),
-                                                money.currency().toString()
-                                        ));
-                            }
-                            transaction.setDestinationAccountId(accountValidationResult.id());
-                            return transactionRepositoryPortOut.save(transaction)
-                                    .flatMap(saved ->
-                                            toTransfer(saved,money,originAccountId,accountValidationResult.id())
-                                                    .then(markAsSuccessful(saved)).map(
-                                                            this::returnTransferResult));
-                        }));
+        return accountPort.findAccountById(originAccountId)
+                .then(
+                    transactionRepositoryPortOut.findByKey(idempotencyKey)
+                    .flatMap(response -> {
+                        if (response.getStatus().equals(TransactionStatus.PENDING)){
+                            /// SERÍA PERTINENTE AÑADIR UN SERVICIO O ELEMENTO QUE REVISE LAS TRANSACCIONES PENDIENTES
+                            return Mono.error(new FailedTransactionException(response.getId()));
+                        }
+                        return Mono.just(returnTransferResult(response));
+                    })
+                    .switchIfEmpty(
+                    accountPort.findAccountIdByNumber(destinationAccountNumber)
+                    //.switchIfEmpty(Mono.error(new AccountNotFoundException(destinationAccountNumber)))
+                            .flatMap(accountValidationResult-> {
+                                if (Objects.equals(originAccountId, accountValidationResult.id())){
+                                    return Mono.error(
+                                            new SameAccountTransferException(
+                                                    originAccountId
+                                            ));
+                                }
+                                if (!accountValidationResult.status().equals("ACTIVE")) {
+                                    return Mono.error(
+                                            new AccountNotActiveException(
+                                                    accountValidationResult.status()
+                                            ));
+                                }
+                                if (!accountValidationResult.currency().equals(money.currency())) {
+                                    return Mono.error(
+                                            new DifferentCurrencyException(
+                                                    accountValidationResult.currency().toString(),
+                                                    money.currency().toString()
+                                            ));
+                                }
+                                transaction.setDestinationAccountId(accountValidationResult.id());
+                                return transactionRepositoryPortOut.save(transaction)
+                                        .flatMap(saved ->
+                                                toTransfer(saved,money,originAccountId,accountValidationResult.id())
+                                                        .then(markAsSuccessful(saved)).map(
+                                                                this::returnTransferResult));
+                            }))
+                );
     }
 
     private CreateTransferResult returnTransferResult(

@@ -49,16 +49,21 @@ public class AccountController {
 
     @PostMapping("/credit")
     public Mono<TransactionAccountResponse> creditAccount(
-            @NonNull @Valid @RequestBody TransactionAccountRequest transactionAccountRequest){
+            @NonNull @Valid @RequestBody TransactionAccountRequest transactionAccountRequest)
+    {
         var command = transactionMapper.toCommand(transactionAccountRequest);
         return creditAccountUseCase.execute(command).map(transactionMapper::toResponse);
     }
 
     @PostMapping("/debit")
     public Mono<TransactionAccountResponse> debitAccount(
-            @NonNull @Valid @RequestBody TransactionAccountRequest transactionAccountRequest){
+            @NonNull @Valid @RequestBody TransactionAccountRequest transactionAccountRequest,
+            @AuthenticationPrincipal Jwt jwt)
+    {
         var command = transactionMapper.toCommand(transactionAccountRequest);
-        return debitAccountUseCase.execute(command).map(transactionMapper::toResponse);
+        Long requesterUserId = Long.valueOf(Objects.requireNonNull(jwt.getSubject()));
+
+        return debitAccountUseCase.execute(command, requesterUserId).map(transactionMapper::toResponse);
     }
 
 
