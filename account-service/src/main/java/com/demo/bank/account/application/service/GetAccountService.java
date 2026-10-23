@@ -8,6 +8,7 @@ import com.demo.bank.account.domain.exception.UnauthorizedUserException;
 import com.demo.bank.account.domain.model.Account;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Objects;
@@ -27,5 +28,10 @@ public class GetAccountService implements GetAccountUseCase {
                     }
                     return Mono.just(account);
                 });
+    }
+
+    @Override
+    public Flux<Account> findByOwnerUserId(Long requesterUserId) {
+        return repositoryPortOut.findByOwnerUserId(requesterUserId);
     }
 }

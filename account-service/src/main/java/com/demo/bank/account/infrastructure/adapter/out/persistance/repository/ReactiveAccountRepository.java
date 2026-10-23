@@ -4,6 +4,7 @@ import com.demo.bank.account.infrastructure.adapter.out.persistance.entity.Accou
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
@@ -18,4 +19,6 @@ public interface ReactiveAccountRepository extends ReactiveCrudRepository<Accoun
 
     @Query("UPDATE account SET balance = balance + :amount WHERE id = :id; SELECT * FROM account WHERE id = :id")
     Mono<AccountEntity> credit(Long id, BigDecimal amount);
+
+    Flux<AccountEntity> findByOwnerUserId(Long ownerUserId);
 }

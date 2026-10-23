@@ -7,6 +7,7 @@ import com.demo.bank.account.infrastructure.adapter.out.persistance.mapper.Accou
 import com.demo.bank.account.infrastructure.adapter.out.persistance.repository.ReactiveAccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
@@ -43,5 +44,11 @@ public class AccountPersistenceAdapter implements AccountRepositoryPortOut {
     @Override
     public Mono<Account> credit(Long id, BigDecimal amount) {
         return reactiveAccountRepository.credit(id, amount).map(mapper::entityToDomain);
+    }
+
+    @Override
+    public Flux<Account> findByOwnerUserId(Long ownerUserId) {
+        return reactiveAccountRepository.findByOwnerUserId(ownerUserId)
+                .map(mapper::entityToDomain);
     }
 }

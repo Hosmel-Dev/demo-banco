@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Objects;
@@ -64,6 +65,13 @@ public class AccountController {
         Long requesterUserId = Long.valueOf(Objects.requireNonNull(jwt.getSubject()));
 
         return debitAccountUseCase.execute(command, requesterUserId).map(transactionMapper::toResponse);
+    }
+
+    // AccountController.java — importar Flux; colocar antes de /{id}
+    @GetMapping("/me")
+    public Flux<AccountResponse> getMyAccounts(@AuthenticationPrincipal Jwt jwt) {
+        Long userId = Long.valueOf(Objects.requireNonNull(jwt.getSubject()));
+        return getAccountsUseCase.findByOwnerUserId(userId).map(mapper::toResponse);
     }
 
 
