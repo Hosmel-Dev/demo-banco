@@ -33,6 +33,16 @@ spring:
               predicates:
                 - Path=/v1/transactions/debit
                 - Method=POST
+            - id: transaction-transfer
+              uri: http://localhost:8101
+              predicates:
+                - Path=/v1/transactions/transfers
+                - Method=POST
+            - id: transaction-credit
+              uri: http://localhost:8101
+              predicates:
+                - Path=/v1/transactions/credit
+                - Method=POST
 bank:
   jwt:
     public-key: 'D:\Demos spring boot\bank-keys\public.pem'
