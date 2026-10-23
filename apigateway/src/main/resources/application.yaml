@@ -1,0 +1,15 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: account-login
+              uri: http://localhost:8100
+              predicates:
+                - Path=/auth/login
+                - Method=POST
