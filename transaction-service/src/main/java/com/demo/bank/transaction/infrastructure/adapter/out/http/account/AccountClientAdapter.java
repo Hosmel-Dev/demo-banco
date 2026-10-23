@@ -78,6 +78,7 @@ public class AccountClientAdapter implements AccountPort {
         return accountWebClient
                 .post()
                 .uri("/accounts/credit")
+                .header("X-Internal-Service-Key", internalDebitKey)
                 .bodyValue(request)
                 .retrieve()
                 .onStatus(
@@ -114,6 +115,7 @@ public class AccountClientAdapter implements AccountPort {
         return accountWebClient
                 .get()
                 .uri("/accounts/number/{account-number}",accountNumber)
+                .header("X-Internal-Service-Key", internalDebitKey)
                 .retrieve()
                 .onStatus(
                         HttpStatusCode::is4xxClientError,

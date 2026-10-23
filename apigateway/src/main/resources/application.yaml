@@ -18,6 +18,11 @@ spring:
               predicates:
                 - Path=/v1/accounts/{id}
                 - Method=GET
+            - id: account-list
+              uri: http://localhost:8100
+              predicates:
+                - Path=/v1/accounts/me
+                - Method=GET
             - id: account-me
               uri: http://localhost:8100
               predicates:

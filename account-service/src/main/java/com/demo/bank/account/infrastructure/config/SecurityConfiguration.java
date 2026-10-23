@@ -34,7 +34,7 @@ public class SecurityConfiguration {
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
         http
-                .csrf(csrf -> csrf.disable())
+                .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(auth -> auth
                         .pathMatchers(HttpMethod.POST, "/auth/login").permitAll()
                         .pathMatchers(HttpMethod.GET, "/auth/me").authenticated()
@@ -50,6 +50,32 @@ public class SecurityConfiguration {
                                                         .getHeaders()
                                                         .getFirst(INTERNAL_HEADER)
                                         )
+                                ))
+                                .defaultIfEmpty(new AuthorizationDecision(false))
+                        )
+
+                        .pathMatchers(HttpMethod.GET, "/v1/accounts/number/*")
+                        .access((authentication, context) -> authentication
+                                .<AuthorizationResult>map(current -> new AuthorizationDecision(
+                                        current instanceof JwtAuthenticationToken
+                                                && current.isAuthenticated()
+                                                && validInternalKey(context.getExchange()
+                                                .getRequest()
+                                                .getHeaders()
+                                                .getFirst(INTERNAL_HEADER))
+                                ))
+                                .defaultIfEmpty(new AuthorizationDecision(false))
+                        )
+
+                        .pathMatchers(HttpMethod.POST, "/v1/accounts/credit")
+                        .access((authentication, context) -> authentication
+                                .<AuthorizationResult>map(current -> new AuthorizationDecision(
+                                        current instanceof JwtAuthenticationToken
+                                                && current.isAuthenticated()
+                                                && validInternalKey(context.getExchange()
+                                                .getRequest()
+                                                .getHeaders()
+                                                .getFirst(INTERNAL_HEADER))
                                 ))
                                 .defaultIfEmpty(new AuthorizationDecision(false))
                         )
