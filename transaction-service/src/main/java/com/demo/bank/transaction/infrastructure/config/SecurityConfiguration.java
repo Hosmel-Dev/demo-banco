@@ -14,10 +14,8 @@ public class SecurityConfiguration {
 
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) throws Exception {
-
-
         http
-                .csrf(csrf -> csrf.disable())
+                .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(auth -> auth
                         .pathMatchers(HttpMethod.GET, "/v1/transactions/me").authenticated()
                         .pathMatchers(HttpMethod.POST, "/v1/transactions/debit").authenticated()
