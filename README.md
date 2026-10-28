@@ -300,11 +300,3 @@ Respuesta exitosa `200`:
     "createdAt": "2026-09-14T17:32:00.7590715"
 }
 ```
-
-## Nota antes de publicar
-
-Los `application.yml` base todavía contienen valores locales de desarrollo,
-incluida una clave interna literal. El perfil Docker recibe la
-clave de `.env`, pero esos archivos base también entran en las imágenes al
-compilar. Antes de publicar fuera del entorno de práctica, elimina los valores
-literales de los archivos versionados y rota la clave interna.

@@ -43,15 +43,13 @@ services:
       context: ./account-service
     image: account-service:0.0.1
     restart: on-failure
+    ports:
+      - "${ACCOUNT_SERVICE_PORT}:8100"
     depends_on:
       mysql:
         condition: service_healthy
     environment:
       JAVA_OPTS: "-Xms256M -Xmx256M"
-      SPRING_PROFILES_ACTIVE: docker
-      BANK_JWT_PUBLIC_KEY: /app/public.pem
-      BANK_JWT_PRIVATE_KEY: /app/private.pem
-      BANK_INTERNAL_DEBIT_KEY: "${BANK_INTERNAL_DEBIT_KEY}"
 
       SPRING_R2DBC_URL: "${ACCOUNT_R2DBC_URL}"
       SPRING_R2DBC_USERNAME: "${ACCOUNT_DB_USER}"
@@ -61,15 +59,6 @@ services:
       SPRING_FLYWAY_USERNAME: "${ACCOUNT_DB_USER}"
       SPRING_FLYWAY_PASSWORD: "${ACCOUNT_DB_PASSWORD}"
       SPRING_FLYWAY_LOCATIONS: classpath:db/migration
-    volumes:
-      - type: bind
-        source: ${BANK_KEYS_DIR:-../bank-keys}/public.pem
-        target: /app/public.pem
-        read_only: true
-      - type: bind
-        source: ${BANK_KEYS_DIR:-../bank-keys}/private.pem
-        target: /app/private.pem
-        read_only: true
 
   transaction-service:
     container_name: ms-transaction
@@ -77,16 +66,13 @@ services:
       context: ./transaction-service
     image: transaction-service:0.0.1
     restart: on-failure
+    ports:
+      - "${TRANSACTION_SERVICE_PORT}:8101"
     depends_on:
       postgres:
         condition: service_healthy
-      account-service:
-        condition: service_started
     environment:
       JAVA_OPTS: "-Xms256M -Xmx256M"
-      SPRING_PROFILES_ACTIVE: docker
-      BANK_JWT_PUBLIC_KEY: /app/public.pem
-      BANK_INTERNAL_DEBIT_KEY: "${BANK_INTERNAL_DEBIT_KEY}"
 
       SPRING_R2DBC_URL: "${TRANSACTION_R2DBC_URL}"
       SPRING_R2DBC_USERNAME: "${TRANSACTION_DB_USER}"
@@ -98,34 +84,6 @@ services:
       SPRING_FLYWAY_LOCATIONS: classpath:db/migration
 
       ACCOUNT_SERVICE_URL: "${ACCOUNT_SERVICE_BASE_URL}"
-    volumes:
-      - type: bind
-        source: ${BANK_KEYS_DIR:-../bank-keys}/public.pem
-        target: /app/public.pem
-        read_only: true
-
-  apigateway:
-    container_name: api-gateway
-    build:
-      context: ./apigateway
-    image: apigateway:0.0.1
-    restart: on-failure
-    ports:
-      - "${GATEWAY_PORT:-8080}:8080"
-    depends_on:
-      account-service:
-        condition: service_started
-      transaction-service:
-        condition: service_started
-    environment:
-      ACCOUNT_SERVICE_ORIGIN: http://account-service:8100
-      TRANSACTION_SERVICE_ORIGIN: http://transaction-service:8101
-      BANK_JWT_PUBLIC_KEY: /app/public.pem
-    volumes:
-      - type: bind
-        source: ${BANK_KEYS_DIR:-../bank-keys}/public.pem
-        target: /app/public.pem
-        read_only: true
 
 volumes:
   mysql_data:
