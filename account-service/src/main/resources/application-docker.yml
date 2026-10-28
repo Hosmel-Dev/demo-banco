@@ -19,3 +19,9 @@ bank:
   internal:
     debit:
       key: ${BANK_INTERNAL_DEBIT_KEY}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus

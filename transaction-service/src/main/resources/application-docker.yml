@@ -15,10 +15,14 @@ spring:
 web:
   client:
     account: ${ACCOUNT_SERVICE_URL}
-
 bank:
   jwt:
     public-key: ${BANK_JWT_PUBLIC_KEY}
   internal:
     debit:
       key: ${BANK_INTERNAL_DEBIT_KEY}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
