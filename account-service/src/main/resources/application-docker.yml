@@ -12,3 +12,10 @@ spring:
     user: ${SPRING_FLYWAY_USERNAME}
     password: ${SPRING_FLYWAY_PASSWORD}
     locations: ${SPRING_FLYWAY_LOCATIONS}
+bank:
+  jwt:
+    public-key: ${BANK_JWT_PUBLIC_KEY}
+    private-key: ${BANK_JWT_PRIVATE_KEY}
+  internal:
+    debit:
+      key: ${BANK_INTERNAL_DEBIT_KEY}

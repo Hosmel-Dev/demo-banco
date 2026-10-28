@@ -9,37 +9,37 @@ spring:
         webflux:
           routes:
             - id: account-login
-              uri: http://localhost:8100
+              uri: ${ACCOUNT_SERVICE_ORIGIN:http://localhost:8100}
               predicates:
                 - Path=/auth/login
                 - Method=POST
             - id: account-get
-              uri: http://localhost:8100
+              uri: ${ACCOUNT_SERVICE_ORIGIN:http://localhost:8100}
               predicates:
                 - Path=/v1/accounts/{id}
                 - Method=GET
             - id: account-list
-              uri: http://localhost:8100
+              uri: ${ACCOUNT_SERVICE_ORIGIN:http://localhost:8100}
               predicates:
                 - Path=/v1/accounts/me
                 - Method=GET
             - id: account-me
-              uri: http://localhost:8100
+              uri: ${ACCOUNT_SERVICE_ORIGIN:http://localhost:8100}
               predicates:
                 - Path=/auth/me
                 - Method=GET
             - id: transaction-debit
-              uri: http://localhost:8101
+              uri: ${TRANSACTION_SERVICE_ORIGIN:http://localhost:8101}
               predicates:
                 - Path=/v1/transactions/debit
                 - Method=POST
             - id: transaction-transfer
-              uri: http://localhost:8101
+              uri: ${TRANSACTION_SERVICE_ORIGIN:http://localhost:8101}
               predicates:
                 - Path=/v1/transactions/transfers
                 - Method=POST
             - id: transaction-credit
-              uri: http://localhost:8101
+              uri: ${TRANSACTION_SERVICE_ORIGIN:http://localhost:8101}
               predicates:
                 - Path=/v1/transactions/credit
                 - Method=POST
