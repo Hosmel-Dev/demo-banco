@@ -46,3 +46,11 @@ spring:
 bank:
   jwt:
     public-key: 'D:\Demos spring boot\bank-keys\public.pem'
+
+management:
+  server:
+    port: 8081
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
