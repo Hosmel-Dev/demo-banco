@@ -1,8 +1,4 @@
-server:
-  port: 8101
 spring:
-  application:
-    name: transaction-service
   r2dbc:
     url: ${SPRING_R2DBC_URL}
     username: ${SPRING_R2DBC_USERNAME}
@@ -21,8 +17,3 @@ bank:
   internal:
     debit:
       key: ${BANK_INTERNAL_DEBIT_KEY}
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,prometheus

@@ -3,6 +3,8 @@ server:
 spring:
   application:
     name: transaction-service
+  config:
+    import: ${SPRING_CONFIG_IMPORT:optional:configserver:http://localhost:8888}
   r2dbc:
     url: r2dbc:postgresql://localhost:5433/transaction_db
     username: user

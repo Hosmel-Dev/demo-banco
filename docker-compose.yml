@@ -37,6 +37,25 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  config-server:
+    container_name: bank-config-server
+    build:
+      context: ./config-server
+    image: config-server:0.0.1
+    restart: on-failure
+    ports:
+      - "127.0.0.1:8888:8888"
+    environment:
+      CONFIG_REPO_LOCATION: file:/config-repo
+    volumes:
+      - ./config-repo:/config-repo:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8888/actuator/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+
   account-service:
     container_name: ms-account
     build:
@@ -44,11 +63,14 @@ services:
     image: account-service:0.0.1
     restart: on-failure
     depends_on:
+      config-server:
+        condition: service_healthy
       mysql:
         condition: service_healthy
     environment:
       JAVA_OPTS: "-Xms256M -Xmx256M"
       SPRING_PROFILES_ACTIVE: docker
+      SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
       BANK_JWT_PUBLIC_KEY: /app/public.pem
       BANK_JWT_PRIVATE_KEY: /app/private.pem
       BANK_INTERNAL_DEBIT_KEY: "${BANK_INTERNAL_DEBIT_KEY}"
@@ -81,6 +103,8 @@ services:
     image: transaction-service:0.0.1
     restart: on-failure
     depends_on:
+      config-server:
+        condition: service_healthy
       postgres:
         condition: service_healthy
       account-service:
@@ -88,6 +112,7 @@ services:
     environment:
       JAVA_OPTS: "-Xms256M -Xmx256M"
       SPRING_PROFILES_ACTIVE: docker
+      SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
       BANK_JWT_PUBLIC_KEY: /app/public.pem
       BANK_INTERNAL_DEBIT_KEY: "${BANK_INTERNAL_DEBIT_KEY}"
 
@@ -119,13 +144,15 @@ services:
     ports:
       - "${GATEWAY_PORT:-8080}:8080"
     depends_on:
+      config-server:
+        condition: service_healthy
       account-service:
         condition: service_started
       transaction-service:
         condition: service_started
     environment:
-      ACCOUNT_SERVICE_ORIGIN: http://account-service:8100
-      TRANSACTION_SERVICE_ORIGIN: http://transaction-service:8101
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
 
       BANK_JWT_PUBLIC_KEY: /app/public.pem
 
