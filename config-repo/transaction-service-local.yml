@@ -1,0 +1,21 @@
+server:
+  port: 8101
+spring:
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5433/transaction_db
+    username: user
+    password: "10001"
+  flyway:
+    url: jdbc:postgresql://localhost:5433/transaction_db
+    user: user
+    password: "10001"
+    locations: classpath:db/migration
+web:
+  client:
+    account: http://localhost:8100/v1
+bank:
+  jwt:
+    public-key: 'D:\Demos spring boot\bank-keys\public.pem'
+  internal:
+    debit:
+      key: "Up9ln1DHLfp5Q3ocr4EpEwfB6Vp095bRr0Ah0P6PIm8="

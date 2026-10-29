@@ -1,0 +1,22 @@
+server:
+  port: 8100
+spring:
+  application:
+    name: account-service
+  r2dbc:
+    url: r2dbc:mysql://localhost:3307/account_db
+    username: user
+    password: "0000"
+  flyway:
+    url: jdbc:mysql://localhost:3307/account_db
+    user: user
+    password: "0000"
+    locations: classpath:db/migration
+
+bank:
+  jwt:
+    public-key: 'D:\Demos spring boot\bank-keys\public.pem'
+    private-key: 'D:\Demos spring boot\bank-keys\private.pem'
+  internal:
+    debit:
+      key: "Up9ln1DHLfp5Q3ocr4EpEwfB6Vp095bRr0Ah0P6PIm8="

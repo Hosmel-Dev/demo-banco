@@ -1,28 +1,5 @@
-server:
-  port: 8100
 spring:
   application:
     name: account-service
   config:
-    import: ${SPRING_CONFIG_IMPORT:optional:configserver:http://localhost:8888}
-  r2dbc:
-    url: r2dbc:mysql://localhost:3307/account_db
-    username: user
-    password: "0000"
-  flyway:
-    url: jdbc:mysql://localhost:3307/account_db
-    user: user
-    password: "0000"
-    locations: classpath:db/migration
-  security:
-    user:
-      name: "admin"
-      password: "admin"
-      roles: ADMIN
-bank:
-  jwt:
-    public-key: 'D:\Demos spring boot\bank-keys\public.pem'
-    private-key: 'D:\Demos spring boot\bank-keys\private.pem'
-  internal:
-    debit:
-      key: ""
+    import: ${SPRING_CONFIG_IMPORT:configserver:http://localhost:8888}
