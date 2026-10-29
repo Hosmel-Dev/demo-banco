@@ -1,0 +1,50 @@
+server:
+  port: 8080
+spring:
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: account-login
+              uri: http://account-service:8100
+              predicates:
+                - Path=/auth/login
+                - Method=POST
+            - id: account-get
+              uri: http://account-service:8100
+              predicates:
+                - Path=/v1/accounts/{id}
+                - Method=GET
+            - id: account-list
+              uri: http://account-service:8100
+              predicates:
+                - Path=/v1/accounts/me
+                - Method=GET
+            - id: account-me
+              uri: http://account-service:8100
+              predicates:
+                - Path=/auth/me
+                - Method=GET
+            - id: transaction-debit
+              uri: http://transaction-service:8101
+              predicates:
+                - Path=/v1/transactions/debit
+                - Method=POST
+            - id: transaction-transfer
+              uri: http://transaction-service:8101
+              predicates:
+                - Path=/v1/transactions/transfers
+                - Method=POST
+            - id: transaction-credit
+              uri: http://transaction-service:8101
+              predicates:
+                - Path=/v1/transactions/credit
+                - Method=POST
+bank:
+  jwt:
+    public-key: 'D:\Demos spring boot\bank-keys\public.pem'
+
+management:
+  server:
+    port: 8081

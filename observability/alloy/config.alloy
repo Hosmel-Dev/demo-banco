@@ -1,0 +1,32 @@
+discovery.docker "bank" {
+  host = "unix:///var/run/docker.sock"
+
+  filter {
+    name   = "name"
+    values = ["ms-account", "ms-transaction", "api-gateway"]
+  }
+}
+
+discovery.relabel "bank_logs" {
+  targets = []
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "service_name"
+  }
+}
+
+loki.source.docker "bank" {
+  host          = "unix:///var/run/docker.sock"
+  targets       = discovery.docker.bank.targets
+  labels        = {job = "docker"}
+  relabel_rules = discovery.relabel.bank_logs.rules
+  forward_to    = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

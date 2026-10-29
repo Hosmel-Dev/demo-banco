@@ -1,10 +1,11 @@
 # Demo Banco
 
-Proyecto de práctica con dos microservicios Spring Boot y un API Gateway:
+Proyecto de práctica con dos microservicios Spring Boot, un API Gateway y Spring Cloud Config:
 
 - `account-service`: gestión de cuentas y saldo.
 - `transaction-service`: registro de débitos, créditos y transferencias.
 - `apigateway`: entrada HTTP para el frontend.
+- `config-server`: configuración centralizada por servicio y perfil.
 
 ## Requisitos
 
@@ -25,6 +26,10 @@ Copy-Item .env.example .env
 todas sus variables automáticamente a los contenedores**. El archivo Compose
 pasa explícitamente `BANK_INTERNAL_DEBIT_KEY` a `account-service` y
 `transaction-service`; ni el Gateway ni el frontend reciben esa clave.
+`account-service-docker.yml` y `transaction-service-docker.yml` referencian
+variables que Compose entrega a cada cliente. Los archivos `*-local.yml` son
+locales e ignorados por Git; copia los ejemplos incluidos y configura allí los
+valores de tu equipo. Config Server también puede servir el perfil `local`.
 
 Configura `BANK_KEYS_DIR` con la carpeta que contiene `public.pem` y
 `private.pem`, fuera del repositorio. Si omites la variable, Compose usa
@@ -46,12 +51,94 @@ docker compose up --build -d
 docker compose ps
 ```
 
+Ese `up` inicia todos los servicios, incluidos Grafana, Loki y Zipkin. Para
+iniciar solo los servicios del banco y sus bases de datos, ejecuta:
+
+```powershell
+docker compose up --build -d config-server account-service transaction-service apigateway
+```
+
+Compose construye las imágenes de los servicios que declaran `build:` y usa
+las imágenes publicadas para MySQL, PostgreSQL y las herramientas de
+observabilidad. Conserva los contenedores existentes si su imagen y su
+configuración no cambiaron.
+
 La primera compilación puede descargar imágenes base y dependencias Maven.
 Las compilaciones posteriores reutilizan las imágenes y capas disponibles;
 nuestros Dockerfiles aún no tienen una caché persistente de Maven para
 recompilaciones después de cambiar `src`. Para iniciar imágenes ya construidas
 sin Internet ni compilación, usa `docker compose up -d --no-build --pull never`.
 Esto requiere que todas las imágenes necesarias ya estén en el equipo.
+
+### Spring Cloud Config
+
+`config-server` sirve los archivos de `config-repo/` con el perfil `native`.
+Compose monta esa carpeta en modo de solo lectura en `/config-repo` y establece
+`CONFIG_REPO_LOCATION=file:/config-repo`. Publica el puerto 8888 solo en
+`127.0.0.1`. Los tres clientes usan el perfil `docker`, esperan a que el
+servidor esté sano y se conectan a `configserver:http://config-server:8888`.
+En Docker la importación es obligatoria: si Config Server no responde, los
+clientes no arrancan.
+
+Config Server combina `config-repo/application.yml` con el archivo del nombre
+y perfil de cada cliente. Por ejemplo, `account-service` con el perfil `docker`
+recibe `account-service-docker.yml` y `application.yml`.
+
+Comprueba la configuración servida desde el host:
+
+```powershell
+curl.exe http://localhost:8888/account-service/docker
+curl.exe http://localhost:8888/api-gateway/docker
+```
+
+El primer resultado debe incluir `server.port=8100` y el segundo las rutas
+del Gateway hacia los nombres de servicio de Compose. Las credenciales de las
+bases de datos, la clave interna y las rutas de archivos PEM para el perfil
+`docker` llegan a los clientes mediante variables de entorno. Config Server
+puede entregar cualquier perfil solicitado, incluido `local`.
+
+Si el host no puede publicar el puerto 8888, cambia el puerto externo en
+`docker-compose.yml` o elimina el mapeo `ports` de `config-server`. La
+comunicación interna seguirá usando `config-server:8888`. Sin puerto publicado,
+puedes consultar su salud dentro del contenedor con:
+
+```powershell
+docker compose exec config-server wget -q -O - http://localhost:8888/actuator/health
+```
+
+Para cambiar configuración compartida, edita `config-repo/` y reinicia el
+cliente afectado con `docker compose restart <servicio>`; este proyecto la
+obtiene durante el arranque, sin refresco automático.
+
+### Ejecución local desde el IDE
+
+Si aún no tienes los archivos locales, cópialos desde `demo banco` y reemplaza
+los valores de ejemplo, incluidas las rutas de las claves PEM. Usa la misma
+clave interna en `account-service-local.yml` y `transaction-service-local.yml`:
+
+```powershell
+Copy-Item config-repo/account-service-local.yml.example config-repo/account-service-local.yml
+Copy-Item config-repo/transaction-service-local.yml.example config-repo/transaction-service-local.yml
+Copy-Item config-repo/api-gateway-local.yml.example config-repo/api-gateway-local.yml
+```
+
+Inicia primero Config Server en el puerto 8888. Si su directorio de trabajo en
+el IDE es `demo banco`, el valor predeterminado `file:./config-repo` encuentra
+los archivos. Configura `SPRING_PROFILES_ACTIVE=local` en los tres clientes;
+así solicitarán `account-service-local.yml`, `transaction-service-local.yml` y
+`api-gateway-local.yml`, además de la configuración común. `account-service`
+requiere Config Server; los otros dos tienen la importación marcada como
+opcional en su `application.yml`, pero necesitan los archivos remotos para la
+configuración local prevista.
+
+Si ejecutas Config Server con Maven desde su propio directorio, indica la
+ruta relativa correcta al repositorio:
+
+```powershell
+cd config-server
+$env:CONFIG_REPO_LOCATION = 'file:../config-repo'
+mvn spring-boot:run
+```
 
 Los datos de MySQL y PostgreSQL están en volúmenes con nombre y se conservan
 al recrear contenedores con `up`. `docker compose down -v` **sí elimina esos

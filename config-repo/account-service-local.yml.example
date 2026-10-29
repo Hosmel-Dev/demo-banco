@@ -1,0 +1,22 @@
+server:
+  port: 8100
+spring:
+  application:
+    name: account-service
+  r2dbc:
+    url: r2dbc:mysql://localhost:3307/account_db
+    username: user
+    password: replace_with_local_account-service_password
+  flyway:
+    url: jdbc:mysql://localhost:3307/account_db
+    user: user
+    password: replace_with_local_account-service_password
+    locations: classpath:db/migration
+
+bank:
+  jwt:
+    public-key: C:/path/to/public.pem
+    private-key: C:/path/to/private.pem
+  internal:
+    debit:
+      key: replace_with_local_internal_key

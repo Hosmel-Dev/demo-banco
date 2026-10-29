@@ -1,8 +1,6 @@
 server:
   port: 8101
 spring:
-  application:
-    name: transaction-service
   r2dbc:
     url: ${SPRING_R2DBC_URL}
     username: ${SPRING_R2DBC_USERNAME}
@@ -15,7 +13,6 @@ spring:
 web:
   client:
     account: ${ACCOUNT_SERVICE_URL}
-
 bank:
   jwt:
     public-key: ${BANK_JWT_PUBLIC_KEY}

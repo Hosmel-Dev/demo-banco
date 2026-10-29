@@ -37,6 +37,25 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  config-server:
+    container_name: bank-config-server
+    build:
+      context: ./config-server
+    image: config-server:0.0.1
+    restart: on-failure
+    ports:
+      - "127.0.0.1:8888:8888"
+    environment:
+      CONFIG_REPO_LOCATION: file:/config-repo
+    volumes:
+      - ./config-repo:/config-repo:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8888/actuator/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+
   account-service:
     container_name: ms-account
     build:
@@ -44,11 +63,14 @@ services:
     image: account-service:0.0.1
     restart: on-failure
     depends_on:
+      config-server:
+        condition: service_healthy
       mysql:
         condition: service_healthy
     environment:
       JAVA_OPTS: "-Xms256M -Xmx256M"
       SPRING_PROFILES_ACTIVE: docker
+      SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
       BANK_JWT_PUBLIC_KEY: /app/public.pem
       BANK_JWT_PRIVATE_KEY: /app/private.pem
       BANK_INTERNAL_DEBIT_KEY: "${BANK_INTERNAL_DEBIT_KEY}"
@@ -61,6 +83,9 @@ services:
       SPRING_FLYWAY_USERNAME: "${ACCOUNT_DB_USER}"
       SPRING_FLYWAY_PASSWORD: "${ACCOUNT_DB_PASSWORD}"
       SPRING_FLYWAY_LOCATIONS: classpath:db/migration
+
+      MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
     volumes:
       - type: bind
         source: ${BANK_KEYS_DIR:-../bank-keys}/public.pem
@@ -78,6 +103,8 @@ services:
     image: transaction-service:0.0.1
     restart: on-failure
     depends_on:
+      config-server:
+        condition: service_healthy
       postgres:
         condition: service_healthy
       account-service:
@@ -85,6 +112,7 @@ services:
     environment:
       JAVA_OPTS: "-Xms256M -Xmx256M"
       SPRING_PROFILES_ACTIVE: docker
+      SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
       BANK_JWT_PUBLIC_KEY: /app/public.pem
       BANK_INTERNAL_DEBIT_KEY: "${BANK_INTERNAL_DEBIT_KEY}"
 
@@ -98,6 +126,9 @@ services:
       SPRING_FLYWAY_LOCATIONS: classpath:db/migration
 
       ACCOUNT_SERVICE_URL: "${ACCOUNT_SERVICE_BASE_URL}"
+
+      MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
     volumes:
       - type: bind
         source: ${BANK_KEYS_DIR:-../bank-keys}/public.pem
@@ -113,20 +144,80 @@ services:
     ports:
       - "${GATEWAY_PORT:-8080}:8080"
     depends_on:
+      config-server:
+        condition: service_healthy
       account-service:
         condition: service_started
       transaction-service:
         condition: service_started
     environment:
-      ACCOUNT_SERVICE_ORIGIN: http://account-service:8100
-      TRANSACTION_SERVICE_ORIGIN: http://transaction-service:8101
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
+
       BANK_JWT_PUBLIC_KEY: /app/public.pem
+
+      MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
     volumes:
       - type: bind
         source: ${BANK_KEYS_DIR:-../bank-keys}/public.pem
         target: /app/public.pem
         read_only: true
 
+  prometheus:
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+
+  grafana:
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana_data:/var/lib/grafana
+
+  zipkin:
+    image: openzipkin/zipkin:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9411:9411"
+
+  loki:
+    image: grafana/loki:3.7.0
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3100:3100"
+    volumes:
+      - loki_data:/loki
+
+  alloy:
+    image: grafana/alloy:latest
+    restart: unless-stopped
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    ports:
+      - "127.0.0.1:12345:12345"
+    volumes:
+      - ./observability/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - alloy_data:/var/lib/alloy/data
+    depends_on:
+      - loki
+
 volumes:
   mysql_data:
   postgres_data:
+  prometheus_data:
+  grafana_data:
+  loki_data:
+  alloy_data:

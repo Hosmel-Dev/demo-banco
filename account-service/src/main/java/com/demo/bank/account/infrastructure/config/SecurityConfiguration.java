@@ -37,6 +37,8 @@ public class SecurityConfiguration {
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(auth -> auth
                         .pathMatchers(HttpMethod.POST, "/auth/login").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/actuator/health").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/actuator/prometheus").permitAll()
                         .pathMatchers(HttpMethod.GET, "/auth/me").authenticated()
                         .pathMatchers(HttpMethod.GET, "/v1/accounts/*").authenticated()
                         .pathMatchers(HttpMethod.POST, "/v1/accounts/debit")

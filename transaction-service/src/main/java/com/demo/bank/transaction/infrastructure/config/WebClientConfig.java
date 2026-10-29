@@ -17,8 +17,8 @@ public class WebClientConfig {
     }
 
     @Bean
-    public WebClient accountWebClient(){
-        return WebClient.builder()
+    public WebClient accountWebClient(WebClient.Builder builder) {
+        return builder
                 .baseUrl(accountConnection)
                 .filter(new ServerBearerExchangeFilterFunction())
                 .build();
