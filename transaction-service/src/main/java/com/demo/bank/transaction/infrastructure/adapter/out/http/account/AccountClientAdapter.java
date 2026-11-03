@@ -6,6 +6,8 @@ import com.demo.bank.transaction.application.port.out.AccountPort;
 import com.demo.bank.transaction.infrastructure.exception.AccountNotFoundException;
 import com.demo.bank.transaction.domain.model.Money;
 import com.demo.bank.transaction.infrastructure.exception.*;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
@@ -111,6 +113,7 @@ public class AccountClientAdapter implements AccountPort {
     }
 
     @Override
+    @CircuitBreaker(name = "accountLookup", fallbackMethod = "accountByNumberFallback")
     public Mono<AccountValidationResult> findAccountIdByNumber(String accountNumber) {
         return accountWebClient
                 .get()
@@ -148,7 +151,14 @@ public class AccountClientAdapter implements AccountPort {
                 );
     }
 
+    private Mono<AccountValidationResult> accountByNumberFallback(
+            String accountNumber,
+            CallNotPermittedException exception) {
+        return Mono.error(new AccountServiceUnavailableException());
+    }
+
     @Override
+    @CircuitBreaker(name = "accountLookup", fallbackMethod = "accountByIdFallback")
     public Mono<AccountValidationResult> findAccountById(Long accountId) {
         return accountWebClient
                 .get()
@@ -183,6 +193,12 @@ public class AccountClientAdapter implements AccountPort {
                         WebClientRequestException.class,
                         ex -> new AccountServiceUnavailableException()
                 );
+    }
+
+    private Mono<AccountValidationResult> accountByIdFallback(
+            Long accountId,
+            CallNotPermittedException exception) {
+        return Mono.error(new AccountServiceUnavailableException());
     }
 
     private RuntimeException mapClientError(Long accountId, AccountServiceProblem problemDetail){

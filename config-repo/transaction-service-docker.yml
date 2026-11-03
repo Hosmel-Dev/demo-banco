@@ -19,3 +19,21 @@ bank:
   internal:
     debit:
       key: ${BANK_INTERNAL_DEBIT_KEY}
+resilience4j:
+  circuitbreaker:
+    instances:
+      accountLookup:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 20s
+        permittedNumberOfCallsInHalfOpenState: 3
+        recordExceptions:
+          - com.demo.bank.transaction.infrastructure.exception.AccountServiceUnavailableException
+        ignoreExceptions:
+          - com.demo.bank.transaction.infrastructure.exception.AccountNotFoundException
+          - com.demo.bank.transaction.infrastructure.exception.AccountNotActiveException
+          - com.demo.bank.transaction.infrastructure.exception.DifferentCurrencyException
+          - com.demo.bank.transaction.infrastructure.exception.InsufficientFundsException
+          - com.demo.bank.transaction.infrastructure.exception.ForbiddenAccessException

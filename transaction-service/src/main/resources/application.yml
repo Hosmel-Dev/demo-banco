@@ -3,27 +3,3 @@ spring:
     name: transaction-service
   config:
     import: ${SPRING_CONFIG_IMPORT:optional:configserver:http://localhost:8888}
-  r2dbc:
-    url: r2dbc:postgresql://localhost:5433/transaction_db
-    username: user
-    password: "10001"
-  flyway:
-    url: jdbc:postgresql://localhost:5433/transaction_db
-    user: user
-    password: "10001"
-    locations: classpath:db/migration
-#  security:
-#    user:
-#      name: admin
-#      password: qwerty
-#      roles: ADMIN
-bank:
-  jwt:
-    public-key: 'D:\Demos spring boot\bank-keys\public.pem'
-  internal:
-    debit:
-      key: ""
-
-web:
-  client:
-    account: http://account-service:8100/v1
