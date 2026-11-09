@@ -24,6 +24,17 @@ import java.util.LinkedHashMap;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+    @ExceptionHandler(AccountLedgerConflictException.class)
+    public ProblemDetail handleAccountLedgerConflict(
+            AccountLedgerConflictException exception) {
+        return newProblem(
+                HttpStatus.CONFLICT,
+                "/problems/ledger-conflict",
+                "Conflicto de asiento",
+                exception.getMessage(),
+                exception.getCode());
+    }
+
     @ExceptionHandler(SameAccountTransferException.class)
     public ProblemDetail handleSameAccountTransfer(SameAccountTransferException exception){
         ProblemDetail problem = newProblem(

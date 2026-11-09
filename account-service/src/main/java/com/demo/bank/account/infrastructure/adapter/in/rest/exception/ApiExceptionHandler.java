@@ -19,6 +19,16 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+    @ExceptionHandler(LedgerConflictException.class)
+    public ProblemDetail handleLedgerConflict(LedgerConflictException exception) {
+        return newProblem(
+                HttpStatus.CONFLICT,
+                "/problems/ledger-conflict",
+                "Conflicto de asiento",
+                exception.getMessage(),
+                exception.getCode());
+    }
+
     @ExceptionHandler(UnauthorizedUserException.class)
     public ProblemDetail handleUnauthorizedUser(UnauthorizedUserException exception){
         return newProblem(

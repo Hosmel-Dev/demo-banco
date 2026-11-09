@@ -4,15 +4,12 @@ import com.demo.bank.transaction.application.dto.command.CreateTransferCommand;
 import com.demo.bank.transaction.application.dto.result.CreateTransferResult;
 import com.demo.bank.transaction.application.port.in.TransferUseCase;
 import com.demo.bank.transaction.application.port.out.AccountPort;
-import com.demo.bank.transaction.application.port.out.LedgerEntriesRepositoryPortOut;
 import com.demo.bank.transaction.application.port.out.TransactionRepositoryPortOut;
-import com.demo.bank.transaction.domain.enums.Direction;
 import com.demo.bank.transaction.domain.enums.EntryKind;
 import com.demo.bank.transaction.domain.enums.TransactionStatus;
 import com.demo.bank.transaction.domain.enums.TransactionType;
 import com.demo.bank.transaction.domain.exception.*;
 import com.demo.bank.transaction.domain.model.FinancialTransaction;
-import com.demo.bank.transaction.domain.model.LedgerEntry;
 import com.demo.bank.transaction.domain.model.Money;
 import com.demo.bank.transaction.infrastructure.exception.AccountNotActiveException;
 import com.demo.bank.transaction.infrastructure.exception.DifferentCurrencyException;
@@ -26,7 +23,6 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class TransferService implements TransferUseCase {
     private final TransactionRepositoryPortOut transactionRepositoryPortOut;
-    private final LedgerEntriesRepositoryPortOut ledgerEntriesRepositoryPortOut;
     private final AccountPort accountPort;
 
     @Override
@@ -40,13 +36,7 @@ public class TransferService implements TransferUseCase {
         return accountPort.findAccountById(originAccountId)
                 .then(
                     transactionRepositoryPortOut.findByKey(idempotencyKey)
-                    .flatMap(response -> {
-                        if (response.getStatus().equals(TransactionStatus.PENDING)){
-                            /// SERÍA PERTINENTE AÑADIR UN SERVICIO O ELEMENTO QUE REVISE LAS TRANSACCIONES PENDIENTES
-                            return Mono.error(new FailedTransactionException(response.getId()));
-                        }
-                        return Mono.just(returnTransferResult(response));
-                    })
+                            .map(this::returnTransferResult)
                     .switchIfEmpty(
                     accountPort.findAccountIdByNumber(destinationAccountNumber)
                     //.switchIfEmpty(Mono.error(new AccountNotFoundException(destinationAccountNumber)))
@@ -114,72 +104,43 @@ public class TransferService implements TransferUseCase {
             FinancialTransaction transaction,
             Money money,
             Long originAccountId,
-            Long destinationAccountId){
-        var originEntry = createLedgerEntry(
-                transaction,
-                money,
-                Direction.DEBIT,
-                originAccountId
-        );
-        var destinationEntry = createLedgerEntry(
-                transaction,
-                money,
-                Direction.CREDIT,
-                destinationAccountId
-        );
+            Long destinationAccountId) {
 
-        return
-                accountPort.debit(originAccountId,money)
-                        .onErrorResume(error ->
-                                markAsFailed(transaction)
-                                        .then(Mono.error(error)))
-                .then(ledgerEntriesRepositoryPortOut.save(originEntry)
-                        .onErrorResume(error ->
-                                compensationDebit(originEntry, transaction)
-                                        .then(Mono.error(error))))
-                .then(accountPort.credit(destinationAccountId,money)
-                        .onErrorResume(error ->
-                                compensationDebitLedger(originEntry, transaction)
-                                        .then(Mono.error(error))))
-                .then(ledgerEntriesRepositoryPortOut.save(destinationEntry)
-                        .onErrorResume(error ->
-                                compensationCredit(originEntry, destinationEntry, transaction)
-                                        .then(Mono.error(error))))
+        return accountPort
+                .debit(
+                        originAccountId,
+                        money,
+                        transaction.getId(),
+                        EntryKind.ORIGINAL)
+                .onErrorResume(error -> {
+                    if (AccountFailureClassifier.definitive(error)) {
+                        return markAsFailed(transaction).then(Mono.error(error));
+                    }
+                    return Mono.error(error);
+                })
+                .then(Mono.defer(() ->
+                        accountPort
+                                .credit(
+                                        destinationAccountId,
+                                        money,
+                                        transaction.getId(),
+                                        EntryKind.ORIGINAL)
+                                .onErrorResume(error -> {
+                                    if (!AccountFailureClassifier.definitive(error)) {
+                                        return Mono.error(error);
+                                    }
+
+                                    return accountPort
+                                            .credit(
+                                                    originAccountId,
+                                                    money,
+                                                    transaction.getId(),
+                                                    EntryKind.COMPENSATION)
+                                            .then(markAsFailed(transaction))
+                                            .then(Mono.error(error));
+                                })))
                 .then();
     }
-
-    private Mono<Void> compensationDebit(LedgerEntry originEntry, FinancialTransaction transaction){
-        return accountPort.credit(originEntry.getAccountId() ,originEntry.getMoney())
-                .then(markAsFailed(transaction))
-                .then();
-    }
-
-    ///Al fallar los ledgers es contraproducente usar ledgers nuevamente para el registro de la compensación se empleará un servicio adicional
-    private Mono<Void> compensationDebitLedger(LedgerEntry originEntry, FinancialTransaction transaction){
-        var originEntryCompensation = createLedgerEntryCompensation(originEntry);
-
-        return accountPort.credit(originEntryCompensation.getAccountId() ,originEntryCompensation.getMoney())
-                .then(ledgerEntriesRepositoryPortOut.save(originEntryCompensation))
-                .then(markAsFailed(transaction))
-                .then();
-    }
-
-    private Mono<Void> compensationCredit(
-            LedgerEntry originEntry,
-            LedgerEntry destinationEntry,
-            FinancialTransaction transaction
-    ){
-        var originEntryCompensation = createLedgerEntryCompensation(originEntry);
-        var destinationEntryCompensation = createLedgerEntryCompensation(destinationEntry);
-
-        return accountPort.debit(destinationEntryCompensation.getAccountId() ,originEntryCompensation.getMoney())
-                .then(accountPort.credit(originEntryCompensation.getAccountId() ,originEntryCompensation.getMoney()))
-                //.then(ledgerEntriesRepositoryPortOut.save(originEntryCompensation))
-                //.then(ledgerEntriesRepositoryPortOut.save(destinationEntryCompensation))
-                .then(markAsFailed(transaction))
-                .then();
-    }
-    ///
 
     private Money createMoney(CreateTransferCommand command){
         return new Money(
@@ -198,37 +159,6 @@ public class TransferService implements TransferUseCase {
                 .status(TransactionStatus.PENDING)
                 .description(command.transaction().description())
                 .originAccountId(command.ledgerEntries().originAccountId())
-                .build();
-    }
-
-    private LedgerEntry createLedgerEntry(
-            FinancialTransaction transaction,
-            Money money,
-            Direction direction,
-            Long accountId){
-
-        return LedgerEntry.builder()
-                .accountId(accountId)
-                .transactionId(transaction.getId())
-                .direction(direction)
-                .money(money)
-                .entryKind(EntryKind.ORIGINAL)
-                .build();
-    }
-
-    private LedgerEntry createLedgerEntryCompensation(
-            LedgerEntry original){
-
-        Direction compensationDirection =
-                original.getDirection() == Direction.DEBIT
-                        ? Direction.CREDIT
-                        : Direction.DEBIT;
-
-        return LedgerEntry.builder()
-                .transactionId(original.getTransactionId())
-                .accountId(original.getAccountId())
-                .money(original.getMoney())
-                .direction(compensationDirection)
                 .build();
     }
 }

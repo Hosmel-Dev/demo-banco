@@ -3,12 +3,12 @@ package com.demo.bank.transaction.infrastructure.adapter.out.http.account;
 import com.demo.bank.transaction.application.dto.result.AccountOperationResult;
 import com.demo.bank.transaction.application.dto.result.AccountValidationResult;
 import com.demo.bank.transaction.application.port.out.AccountPort;
+import com.demo.bank.transaction.domain.enums.EntryKind;
 import com.demo.bank.transaction.infrastructure.exception.AccountNotFoundException;
 import com.demo.bank.transaction.domain.model.Money;
 import com.demo.bank.transaction.infrastructure.exception.*;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
@@ -28,12 +28,15 @@ public class AccountClientAdapter implements AccountPort {
         this.internalDebitKey = internalDebitKey;
     }
 
+    @CircuitBreaker(name = "accountMovement", fallbackMethod = "debitFallback")
     @Override
-    public Mono<AccountOperationResult> debit(Long accountId, Money money) {
+    public Mono<AccountOperationResult> debit(Long accountId, Money money, Long transactionId, EntryKind entryKind) {
         AccountRequest request = AccountRequest.builder()
                 .id(accountId)
                 .amount(money.amount())
                 .currency(money.currency())
+                .transactionId(transactionId)
+                .entryKind(entryKind)
                 .build();
         return accountWebClient
                 .post()
@@ -70,12 +73,24 @@ public class AccountClientAdapter implements AccountPort {
                 );
     }
 
+    private Mono<AccountOperationResult> debitFallback(
+            Long accountId,
+            Money money,
+            Long transactionId,
+            EntryKind entryKind,
+            CallNotPermittedException exception) {
+        return Mono.error(new AccountServiceUnavailableException());
+    }
+
+    @CircuitBreaker(name = "accountMovement", fallbackMethod = "creditFallback")
     @Override
-    public Mono<AccountOperationResult> credit(Long accountId, Money money) {
+    public Mono<AccountOperationResult> credit(Long accountId, Money money, Long transactionId, EntryKind entryKind) {
         AccountRequest request = AccountRequest.builder()
                 .id(accountId)
                 .amount(money.amount())
                 .currency(money.currency())
+                .transactionId(transactionId)
+                .entryKind(entryKind)
                 .build();
         return accountWebClient
                 .post()
@@ -110,6 +125,15 @@ public class AccountClientAdapter implements AccountPort {
                         WebClientRequestException.class,
                         ex -> new AccountServiceUnavailableException()
                 );
+    }
+
+    private Mono<AccountOperationResult> creditFallback(
+            Long accountId,
+            Money money,
+            Long transactionId,
+            EntryKind entryKind,
+            CallNotPermittedException exception) {
+        return Mono.error(new AccountServiceUnavailableException());
     }
 
     @Override
@@ -212,6 +236,7 @@ public class AccountClientAdapter implements AccountPort {
             case "WRONG_CURRENCY" -> new DifferentCurrencyException();
             case "INSUFFICIENT_FUNDS" -> new InsufficientFundsException(accountId);
             case "FORBIDDEN_ACCESS" -> new ForbiddenAccessException();
+            case "LEDGER_CONFLICT" -> new AccountLedgerConflictException();
             default -> new AccountServiceException();
         };
 

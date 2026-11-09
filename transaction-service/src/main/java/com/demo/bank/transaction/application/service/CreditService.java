@@ -4,13 +4,11 @@ import com.demo.bank.transaction.application.dto.command.CreateTransactionComman
 import com.demo.bank.transaction.application.dto.result.CreateTransactionResult;
 import com.demo.bank.transaction.application.port.in.CreditUseCase;
 import com.demo.bank.transaction.application.port.out.AccountPort;
-import com.demo.bank.transaction.application.port.out.LedgerEntriesRepositoryPortOut;
 import com.demo.bank.transaction.application.port.out.TransactionRepositoryPortOut;
-import com.demo.bank.transaction.domain.enums.Direction;
+import com.demo.bank.transaction.domain.enums.EntryKind;
 import com.demo.bank.transaction.domain.enums.TransactionStatus;
 import com.demo.bank.transaction.domain.enums.TransactionType;
 import com.demo.bank.transaction.domain.model.FinancialTransaction;
-import com.demo.bank.transaction.domain.model.LedgerEntry;
 import com.demo.bank.transaction.domain.model.Money;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,7 +19,6 @@ import reactor.core.publisher.Mono;
 public class CreditService implements CreditUseCase {
     private final TransactionRepositoryPortOut transactionRepositoryPortOut;
     private final AccountPort accountPort;
-    private final LedgerEntriesRepositoryPortOut ledgerEntriesRepositoryPortOut;
 
 
     @Override
@@ -45,17 +42,34 @@ public class CreditService implements CreditUseCase {
 
     }
 
-    private Mono<Void> toCredit(FinancialTransaction transaction, Long accountId, Money money){
-        var ledgerEntry = createLedgerEntry(transaction, accountId, money);
-
-        return accountPort.credit(accountId,money)
-                .then(ledgerEntriesRepositoryPortOut.save(ledgerEntry))
+    private Mono<Void> toCredit(
+            FinancialTransaction transaction,
+            Long accountId,
+            Money money) {
+        return accountPort
+                .credit(accountId, money, transaction.getId(), EntryKind.ORIGINAL)
+                .onErrorResume(error -> {
+                    if (AccountFailureClassifier.definitive(error)) {
+                        return markAsFailed(transaction).then(Mono.error(error));
+                    }
+                    return Mono.error(error);
+                })
                 .then();
     }
 
+    private Mono<FinancialTransaction> markAsFailed(
+            FinancialTransaction transaction) {
+        return Mono.defer(() -> {
+            transaction.markAsFailed();
+            return transactionRepositoryPortOut.save(transaction);
+        });
+    }
+
     private Mono<FinancialTransaction> markAsSuccessful(FinancialTransaction transaction){
-        transaction.markAsSuccessful();
-        return transactionRepositoryPortOut.save(transaction);
+        return Mono.defer(() -> {
+            transaction.markAsSuccessful();
+            return transactionRepositoryPortOut.save(transaction);
+        });
     }
 
     private Money createMoney(CreateTransactionCommand command){
@@ -71,15 +85,6 @@ public class CreditService implements CreditUseCase {
                 .money(money)
                 .status(TransactionStatus.PENDING)
                 .description(command.transaction().description())
-                .build();
-    }
-
-    private LedgerEntry createLedgerEntry(FinancialTransaction financialTransaction, Long accountId, Money money){
-        return LedgerEntry.builder()
-                .transactionId(financialTransaction.getId())
-                .accountId(accountId)
-                .direction(Direction.CREDIT)
-                .money(money)
                 .build();
     }
 

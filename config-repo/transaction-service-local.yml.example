@@ -19,3 +19,38 @@ bank:
   internal:
     debit:
       key: replace_with_local_internal_key
+resilience4j:
+  circuitbreaker:
+    instances:
+      accountLookup:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 20s
+        permittedNumberOfCallsInHalfOpenState: 3
+        recordExceptions:
+          - com.demo.bank.transaction.infrastructure.exception.AccountServiceUnavailableException
+        ignoreExceptions:
+          - com.demo.bank.transaction.infrastructure.exception.AccountNotFoundException
+          - com.demo.bank.transaction.infrastructure.exception.AccountNotActiveException
+          - com.demo.bank.transaction.infrastructure.exception.DifferentCurrencyException
+          - com.demo.bank.transaction.infrastructure.exception.InsufficientFundsException
+          - com.demo.bank.transaction.infrastructure.exception.ForbiddenAccessException
+      accountMovement:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 20s
+        permittedNumberOfCallsInHalfOpenState: 3
+        recordExceptions:
+          - com.demo.bank.transaction.infrastructure.exception.AccountServiceUnavailableException
+          - com.demo.bank.transaction.infrastructure.exception.AccountServiceException
+        ignoreExceptions:
+          - com.demo.bank.transaction.infrastructure.exception.AccountNotFoundException
+          - com.demo.bank.transaction.infrastructure.exception.AccountNotActiveException
+          - com.demo.bank.transaction.infrastructure.exception.DifferentCurrencyException
+          - com.demo.bank.transaction.infrastructure.exception.InsufficientFundsException
+          - com.demo.bank.transaction.infrastructure.exception.ForbiddenAccessException
+          - com.demo.bank.transaction.infrastructure.exception.AccountLedgerConflictException

@@ -5,13 +5,11 @@ import com.demo.bank.transaction.application.dto.command.CreateTransactionComman
 import com.demo.bank.transaction.application.dto.result.CreateTransactionResult;
 import com.demo.bank.transaction.application.port.in.DebitUseCase;
 import com.demo.bank.transaction.application.port.out.AccountPort;
-import com.demo.bank.transaction.application.port.out.LedgerEntriesRepositoryPortOut;
 import com.demo.bank.transaction.application.port.out.TransactionRepositoryPortOut;
-import com.demo.bank.transaction.domain.enums.Direction;
+import com.demo.bank.transaction.domain.enums.EntryKind;
 import com.demo.bank.transaction.domain.enums.TransactionStatus;
 import com.demo.bank.transaction.domain.enums.TransactionType;
 import com.demo.bank.transaction.domain.model.FinancialTransaction;
-import com.demo.bank.transaction.domain.model.LedgerEntry;
 import com.demo.bank.transaction.domain.model.Money;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,7 +21,6 @@ import reactor.core.publisher.Mono;
 public class DebitService implements DebitUseCase {
     private final TransactionRepositoryPortOut transactionRepositoryPortOut;
     private final AccountPort accountPort;
-    private final LedgerEntriesRepositoryPortOut ledgerEntriesRepositoryPortOut;
 
     @Override
     public Mono<CreateTransactionResult> execute(CreateTransactionCommand command, Long requestUserId) {
@@ -50,16 +47,36 @@ public class DebitService implements DebitUseCase {
 
     }
 
-    private Mono<Void> toDebit(FinancialTransaction financialTransaction, Money money, Long accountId){
-        var ledgerEntry = createLedgerEntry(financialTransaction,money,accountId);
-        return accountPort.debit(accountId,money)
-                .then(ledgerEntriesRepositoryPortOut.save(ledgerEntry))
+    private Mono<Void> toDebit(
+            FinancialTransaction transaction,
+            Money money,
+            Long accountId) {
+        return accountPort
+                .debit(accountId, money, transaction.getId(), EntryKind.ORIGINAL)
+                .onErrorResume(error -> {
+                    if (AccountFailureClassifier.definitive(error)) {
+                        return markAsFailed(transaction).then(Mono.error(error));
+                    }
+                    return Mono.error(error);
+                })
                 .then();
     }
 
-    private Mono<FinancialTransaction> markAsSuccessful(FinancialTransaction financialTransaction, Long accountId){
-        financialTransaction.markAsSuccessful();
-        return transactionRepositoryPortOut.save(financialTransaction);
+    private Mono<FinancialTransaction> markAsFailed(
+            FinancialTransaction transaction) {
+        return Mono.defer(() -> {
+            transaction.markAsFailed();
+            return transactionRepositoryPortOut.save(transaction);
+        });
+    }
+
+    private Mono<FinancialTransaction> markAsSuccessful(
+            FinancialTransaction transaction,
+            Long accountId) {
+        return Mono.defer(() -> {
+            transaction.markAsSuccessful();
+            return transactionRepositoryPortOut.save(transaction);
+        });
     }
 
     private Money createMoney(CreateTransactionCommand command){
@@ -77,15 +94,6 @@ public class DebitService implements DebitUseCase {
                 .status(TransactionStatus.PENDING)
                 .description(command.transaction().description())
                 .originAccountId(command.ledgerEntries().accountId())
-                .build();
-    }
-
-    private LedgerEntry createLedgerEntry(FinancialTransaction transaction, Money money, Long accountId){
-        return LedgerEntry.builder()
-                .transactionId(transaction.getId())
-                .accountId(accountId)
-                .direction(Direction.DEBIT)
-                .money(money)
                 .build();
     }
 

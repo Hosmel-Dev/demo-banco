@@ -13,4 +13,5 @@ public interface AccountRepositoryPortOut {
     Mono<Account> debit(Long id, BigDecimal amount);
     Mono<Account> credit(Long id, BigDecimal amount);
     Flux<Account> findByOwnerUserId(Long ownerUserId);
+    Mono<Account> findByIdForUpdate(Long id);
 }

@@ -38,12 +38,20 @@ public class AccountPersistenceAdapter implements AccountRepositoryPortOut {
 
     @Override
     public Mono<Account> debit(Long id, BigDecimal amount) {
-        return reactiveAccountRepository.debit(id, amount).map(mapper::entityToDomain);
+        return reactiveAccountRepository.debitBalance(id, amount)
+                .flatMap(rows -> rows == 1
+                        ? findById(id)
+                        : Mono.error(new IllegalStateException(
+                        "No se pudo actualizar el saldo del débito")));
     }
 
     @Override
     public Mono<Account> credit(Long id, BigDecimal amount) {
-        return reactiveAccountRepository.credit(id, amount).map(mapper::entityToDomain);
+        return reactiveAccountRepository.creditBalance(id, amount)
+                .flatMap(rows -> rows == 1
+                        ? findById(id)
+                        : Mono.error(new IllegalStateException(
+                        "No se pudo actualizar el saldo del crédito")));
     }
 
     @Override
@@ -51,4 +59,12 @@ public class AccountPersistenceAdapter implements AccountRepositoryPortOut {
         return reactiveAccountRepository.findByOwnerUserId(ownerUserId)
                 .map(mapper::entityToDomain);
     }
+
+    @Override
+    public Mono<Account> findByIdForUpdate(Long id) {
+        return reactiveAccountRepository.findByIdForUpdate(id)
+                .map(mapper::entityToDomain);
+    }
+
+
 }

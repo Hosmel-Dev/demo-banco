@@ -1,6 +1,7 @@
 package com.demo.bank.transaction.infrastructure.adapter.out.http.account;
 
 import com.demo.bank.transaction.domain.enums.AppCurrency;
+import com.demo.bank.transaction.domain.enums.EntryKind;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
@@ -14,6 +15,8 @@ import java.math.BigDecimal;
 @Builder
 public class AccountRequest {
     private Long id;
+    private Long transactionId;
     private BigDecimal amount;
     private AppCurrency currency;
+    private EntryKind entryKind;
 }
