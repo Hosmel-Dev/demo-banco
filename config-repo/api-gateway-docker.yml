@@ -43,7 +43,7 @@ spring:
                 - Method=POST
 bank:
   jwt:
-    public-key: 'D:\Demos spring boot\bank-keys\public.pem'
+    public-key: ${BANK_JWT_PUBLIC_KEY}
 
 management:
   server:
