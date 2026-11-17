@@ -1,0 +1,14 @@
+services:
+  account-service:
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: us-east-2
+        awslogs-group: /demo-banco/api-services
+
+  transaction-service:
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: us-east-2
+        awslogs-group: /demo-banco/api-services
